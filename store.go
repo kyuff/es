@@ -25,7 +25,15 @@ func (s *Store) Open(ctx context.Context, entityType string, entityID string) St
 // OpenFrom opens a Stream so the first event read will be eventNumber + 1.
 // The Stream must be closed.
 func (s *Store) OpenFrom(ctx context.Context, entityType string, entityID string, eventNumber int64) Stream {
-	return nil
+	return newStream(
+		ctx,
+		entityType,
+		entityID,
+		eventNumber,
+		s.storage,
+		s.storage,
+		s.cfg,
+	)
 }
 
 // Project onto a Handler all Events by the type and id of the entity.
