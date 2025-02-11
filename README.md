@@ -1,2 +1,3 @@
-# es
-Library to create work with an Event Sourced persistence layer in Go
+# Event Sourcing in Go
+
+Library to work with Event Sourcing as a Persistence Layer in Go
