@@ -2,6 +2,9 @@
 test:
 	go test ./... -count 1 -race
 
+vet:
+	go vet ./...
+
 cover:
 	go test ./... -count 1 -race -cover
 
