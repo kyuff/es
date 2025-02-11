@@ -40,3 +40,9 @@ func WithEventBus(bus EventBus) Option {
 		opt.eventBus = bus
 	}
 }
+
+func WithEventUpgrades(entityType string, upgrades ...EventUpgrade) Option {
+	return func(o *Config) {
+		o.eventUpgrades[entityType] = append(o.eventUpgrades[entityType], upgrades...)
+	}
+}

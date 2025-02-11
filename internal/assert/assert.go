@@ -221,3 +221,14 @@ func Error(t *testing.T, got error) bool {
 
 	return true
 }
+
+func Truef(t *testing.T, got bool, format string, args ...any) bool {
+	t.Helper()
+	if !got {
+		t.Logf(format, args...)
+		t.Fail()
+		return false
+	}
+
+	return true
+}
