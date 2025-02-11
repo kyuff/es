@@ -1,0 +1,15 @@
+@startuml
+!theme amiga
+
+interface "read" as read
+
+component Store {
+  component Stream
+}
+
+component Storage
+
+read -right-> Stream
+Stream --> Storage : read/upgrade
+
+@enduml

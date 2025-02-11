@@ -1,0 +1,19 @@
+@startuml
+!theme amiga
+
+interface "write" as write
+
+component Store {
+  component Stream
+  component EventBus
+}
+
+component Storage
+node Subscribers
+
+write -right-> Stream
+Stream --> Storage : write
+Storage -> EventBus : write/upgrade
+EventBus -right-> Subscribers : handle
+
+@enduml

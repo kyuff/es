@@ -11,6 +11,9 @@ cover:
 gen:
 	go generate ./...
 
-plantuml:
+plantuml-docker:
 	docker run -v $(shell pwd)/docs:/docs -w /docs ghcr.io/plantuml/plantuml *.pu
+
+plantuml:
+	plantuml docs/*.pu
 
