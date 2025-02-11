@@ -69,6 +69,22 @@ func EqualSlice[T comparable](t *testing.T, expected, got []T) bool {
 	return true
 }
 
+func EqualSliceFunc[T comparable](t *testing.T, expected, got []T, equal func(want, item T) bool) bool {
+	t.Helper()
+	if len(expected) != len(got) {
+		t.Errorf(`Expected %d elements, but got %d`, len(expected), len(got))
+		return false
+	}
+
+	for i := range len(expected) {
+		if !equal(expected[i], got[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func EqualTime(t *testing.T, expected, got time.Time) bool {
 	t.Helper()
 	if !expected.Equal(got) {

@@ -105,7 +105,14 @@ func TestStorage(t *testing.T) {
 
 		// assert
 		got := collectEvents(t, i)
-		assert.EqualSlice(t, events, got)
+		assert.EqualSliceFunc(t, events, got, func(want, item es.Event) bool {
+			return assert.Equal(t, want.Content, item.Content) &&
+				assert.Equal(t, want.EventNumber, item.EventNumber) &&
+				assert.Equal(t, want.EntityType, item.EntityType) &&
+				assert.Equal(t, want.EntityID, item.EntityID) &&
+				assert.Equal(t, want.StoreEventID, item.StoreEventID) &&
+				assert.EqualTime(t, want.EventTime, item.EventTime)
+		})
 	})
 
 	t.Run("should publish events", func(t *testing.T) {
