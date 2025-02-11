@@ -53,10 +53,10 @@ func (s *Store) Project(ctx context.Context, entityType, entityID string, handle
 
 // Subscribe to all events on an entityType to be passed to the Handler
 func (s *Store) Subscribe(ctx context.Context, entityType string, subscriberID string, handler Handler) error {
-	return nil
+	return s.cfg.eventBus.Subscribe(ctx, entityType, subscriberID, handler)
 }
 
 // GetSubscriberIDs returns a list of all subscriber IDs registered for a given entityType.
 func (s *Store) GetSubscriberIDs(ctx context.Context, entityType string) ([]string, error) {
-	return nil, nil
+	return s.cfg.eventBus.GetSubscriberIDs(ctx, entityType)
 }
