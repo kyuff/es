@@ -5,7 +5,16 @@ import (
 	"errors"
 )
 
+func NewStore(storage Storage, opts ...Option) *Store {
+	return &Store{
+		storage: storage,
+		cfg:     applyOptions(defaultOptions(), opts...),
+	}
+}
+
 type Store struct {
+	storage Storage
+	cfg     *Config
 }
 
 // Open a stream by the type and id of the entity. The Stream will be opened at the start and must be closed.
