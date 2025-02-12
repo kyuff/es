@@ -3,9 +3,10 @@ package es
 import "context"
 
 type Config struct {
-	logger       Logger
-	contentTypes map[string][]Content
-	eventBus     EventBus
+	logger        Logger
+	eventBus      EventBus
+	contentTypes  map[string][]Content
+	eventUpgrades map[string][]EventUpgrade
 }
 
 type Logger interface {
@@ -15,7 +16,8 @@ type Logger interface {
 
 func defaultOptions() *Config {
 	return applyOptions(&Config{
-		contentTypes: make(map[string][]Content),
+		contentTypes:  make(map[string][]Content),
+		eventUpgrades: make(map[string][]EventUpgrade),
 	},
 		// add default options here
 		WithNoopLogger(),

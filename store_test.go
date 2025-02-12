@@ -19,12 +19,19 @@ func (EventMock) Name() string {
 	return "EventMock"
 }
 
+type UpgradedEventMock struct{ Number int }
+
+func (UpgradedEventMock) Name() string {
+	return "UpgradedEventMock"
+}
+
 func TestStore(t *testing.T) {
 	var (
-		ctx           = context.Background()
-		newEntityType = uuid.V7
-		newEntityID   = uuid.V7
-		newEvent      = func(id, typ string, mods ...func(e *es.Event)) es.Event {
+		ctx             = context.Background()
+		newEntityType   = uuid.V7
+		newEntityID     = uuid.V7
+		newSubscriberID = uuid.V7
+		newEvent        = func(id, typ string, mods ...func(e *es.Event)) es.Event {
 			e := es.Event{
 				EntityID:      id,
 				EntityType:    typ,
@@ -39,14 +46,30 @@ func TestStore(t *testing.T) {
 
 			return e
 		}
-		newEvents = func(c int, id, typ string) []es.Event {
+		newEvents = func(c int, id, typ string, mods ...func(e *es.Event)) []es.Event {
 			var events []es.Event
 			for i := range c {
-				events = append(events, newEvent(id, typ, func(e *es.Event) {
+				m := append(mods, func(e *es.Event) {
 					e.EventNumber = int64(i) + 1
-				}))
+				})
+				events = append(events, newEvent(id, typ, m...))
 			}
 			return events
+		}
+		newEventUpgrade = func(factor int) es.EventUpgradeFunc {
+			return func(ctx context.Context, i iter.Seq2[es.Event, error]) iter.Seq2[es.Event, error] {
+				return func(yield func(es.Event, error) bool) {
+					for event, err := range i {
+						switch e := event.Content.(type) {
+						case EventMock:
+							event.Content = UpgradedEventMock{Number: e.ID * factor}
+						case UpgradedEventMock:
+							event.Content = UpgradedEventMock{Number: e.Number * factor}
+						}
+						yield(event, err)
+					}
+				}
+			}
 		}
 	)
 
@@ -232,6 +255,103 @@ func TestStore(t *testing.T) {
 			assert.NoError(t, err)
 			assert.EqualSeq2(t, expected, got, func(expected, got assert.KeyValue[es.Event, error]) bool {
 				return eventassert.EqualEvent(t, expected.Key, got.Key)
+			})
+		})
+	})
+
+	t.Run("EventUpgrade", func(t *testing.T) {
+		t.Run("upgrade events when projecting", func(t *testing.T) {
+			// arrange
+			var (
+				entityType = newEntityType()
+				entityID   = newEntityID()
+				storage    = &StorageMock{}
+				events     = newEvents(3, entityID, entityType, func(e *es.Event) {
+					e.Content = EventMock{ID: rand.IntN(300)}
+				})
+				factorA, factorB = 2, 3
+				store            = es.NewStore(storage,
+					es.WithEventUpgrades(entityType,
+						newEventUpgrade(factorA),
+						newEventUpgrade(factorB),
+					),
+				)
+				got []es.Event
+			)
+
+			storage.ReadFunc = func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+				return seqs.Seq2(events...)
+			}
+
+			// act
+			err := store.Project(ctx, entityType, entityID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+				got = append(got, event)
+				return nil
+			}))
+
+			// assert
+			assert.NoError(t, err)
+			assert.EqualSliceFunc(t, events, got, func(want, item es.Event) bool {
+				got, ok := item.Content.(UpgradedEventMock)
+				assert.Truef(t, ok, "expected event to be of type UpgradedEventMock, got %T", item.Content)
+
+				expected, ok := want.Content.(EventMock)
+				assert.Truef(t, ok, "expected event to be of type EventMock, got %T", want.Content)
+
+				return assert.Equal(t, expected.ID*factorA*factorB, got.Number)
+			})
+		})
+
+		t.Run("upgrade events when event bus publishes", func(t *testing.T) {
+			// arrange
+			var (
+				entityType   = newEntityType()
+				entityID     = newEntityID()
+				subscriberID = newSubscriberID()
+				storage      = &StorageMock{}
+				eventBus     es.Writer
+				events       = newEvents(3, entityID, entityType, func(e *es.Event) {
+					e.Content = EventMock{ID: rand.IntN(300)}
+				})
+				factorA, factorB = 2, 3
+				store            = es.NewStore(storage,
+					es.WithEventUpgrades(entityType,
+						newEventUpgrade(factorA),
+						newEventUpgrade(factorB),
+					),
+				)
+				got []es.Event
+			)
+
+			storage.StartPublishFunc = func(w es.Writer) error {
+				eventBus = w
+				return nil
+			}
+			storage.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+				return eventBus.Write(ctx, entityType, events)
+			}
+			assert.NoError(t, store.Start())
+
+			assert.NoError(t, store.Subscribe(ctx, entityType, subscriberID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+				got = append(got, event)
+				return nil
+			})))
+			stream := store.Open(ctx, entityType, entityID)
+
+			// act
+			for _, event := range events {
+				assert.NoError(t, stream.Write(event.Content))
+			}
+
+			// assert
+			assert.EqualSliceFunc(t, events, got, func(want, item es.Event) bool {
+				got, ok := item.Content.(UpgradedEventMock)
+				assert.Truef(t, ok, "expected event to be of type UpgradedEventMock, got %T", item.Content)
+
+				expected, ok := want.Content.(EventMock)
+				assert.Truef(t, ok, "expected event to be of type EventMock, got %T", want.Content)
+
+				return assert.Equal(t, expected.ID*factorA*factorB, got.Number)
 			})
 		})
 	})
