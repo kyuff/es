@@ -6,8 +6,16 @@ import (
 	"sync"
 )
 
+// EventUpgrade events into a new version.
+// The events will all be from the same Stream and come in order by EventNumber.
+//
+// The EventUpgrade is used when reading a Stream and when an Event is published
+// to subscribing Handlers. As a result, it is only the events that are in-flight
+// that will go through the EventUpgrade.
+// Example: If you Open a Stream from EventNumber 3, Event 1 and 2 will not be
+// in the events sequence.
 type EventUpgrade interface {
-	Upgrade(ctx context.Context, i iter.Seq2[Event, error]) iter.Seq2[Event, error]
+	Upgrade(ctx context.Context, events iter.Seq2[Event, error]) iter.Seq2[Event, error]
 }
 
 type EventUpgradeFunc func(ctx context.Context, i iter.Seq2[Event, error]) iter.Seq2[Event, error]
