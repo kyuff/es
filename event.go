@@ -1,6 +1,9 @@
 package es
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Content is the application specific data model used in an Event.
 type Content interface {
@@ -28,4 +31,8 @@ type Event struct {
 	// The StoreEntityID is a UUIDv7 with the underlying time matching the EventTime
 	// of the first event in the stream.
 	StoreEntityID string
+	// Metadata contains application specific metadata.
+	// It is meant to be read through the context.Context given to a Handler using
+	// the WithMetadata Option.
+	Metadata map[string]json.RawMessage
 }

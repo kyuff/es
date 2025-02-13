@@ -46,3 +46,9 @@ func WithEventUpgrades(entityType string, upgrades ...EventUpgrade) Option {
 		o.eventUpgrades[entityType] = append(o.eventUpgrades[entityType], upgrades...)
 	}
 }
+
+func WithMetadata(key string, value Metadata) Option {
+	return func(o *Config) {
+
+	}
+}
