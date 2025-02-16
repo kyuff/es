@@ -37,7 +37,6 @@ func TestJSON(t *testing.T) {
 		var (
 			sut        = codecs.NewJSON()
 			entityType = uuid.V7()
-			in         = EventMock{ID: rand.Int()}
 		)
 
 		// act

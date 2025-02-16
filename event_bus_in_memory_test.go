@@ -3,6 +3,7 @@ package es_test
 import (
 	"context"
 	"errors"
+	"maps"
 	"slices"
 	"testing"
 
@@ -40,6 +41,19 @@ func TestInMemoryEventBus(t *testing.T) {
 		}
 	)
 	t.Run("Subscribe", func(t *testing.T) {
+		t.Run("close with no error", func(t *testing.T) {
+			// arrange
+			var (
+				sut = es.NewInMemoryEventBus()
+			)
+
+			// act
+			err := sut.Close()
+
+			// assert
+			assert.NoError(t, err)
+		})
+
 		t.Run("should register a subscriber", func(t *testing.T) {
 			// arrange
 			var (
@@ -103,6 +117,30 @@ func TestInMemoryEventBus(t *testing.T) {
 	})
 
 	t.Run("Write", func(t *testing.T) {
+		t.Run("do nothing if no registered subscriber", func(t *testing.T) {
+			// arrange
+			var (
+				sut          = es.NewInMemoryEventBus()
+				entityType   = newEntityType()
+				subscriberID = newSubscriberID()
+				got          []es.Event
+				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+					got = append(got, event)
+					return nil
+				})
+				events = newEventList(entityType, 3)
+			)
+
+			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+
+			// act
+			err := sut.Write(ctx, "other", seqs.Seq2(events...))
+
+			// assert
+			assert.NoError(t, err)
+			assert.EqualSlice(t, []es.Event{}, got)
+		})
+
 		t.Run("should publish events written", func(t *testing.T) {
 			// arrange
 			var (
@@ -187,6 +225,132 @@ func TestInMemoryEventBus(t *testing.T) {
 				assert.Equal(t, events[i].EventNumber, got[3*i+1].EventNumber)
 				assert.Equal(t, events[i].EventNumber, got[3*i+2].EventNumber)
 			}
+		})
+
+		t.Run("should fail with sequence", func(t *testing.T) {
+			// arrange
+			var (
+				sut          = es.NewInMemoryEventBus()
+				entityType   = newEntityType()
+				subscriberID = newSubscriberID()
+				got          []es.Event
+				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+					got = append(got, event)
+					return errors.New("FAIL")
+				})
+				events = maps.All(map[es.Event]error{
+					es.Event{}: errors.New("FAIL"),
+				})
+			)
+
+			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+
+			// act
+			err := sut.Write(ctx, entityType, events)
+
+			// assert
+			assert.Error(t, err)
+			assert.EqualSlice(t, []es.Event{}, got)
+		})
+	})
+
+	t.Run("WriteTo", func(t *testing.T) {
+		t.Run("do nothing if no registered subscriber", func(t *testing.T) {
+			// arrange
+			var (
+				sut          = es.NewInMemoryEventBus()
+				entityType   = newEntityType()
+				subscriberID = newSubscriberID()
+				got          []es.Event
+				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+					got = append(got, event)
+					return nil
+				})
+				events = newEventList(entityType, 3)
+			)
+
+			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+
+			// act
+			err := sut.WriteTo(ctx, "other", seqs.Seq2(events...), subscriberID)
+
+			// assert
+			assert.NoError(t, err)
+			assert.EqualSlice(t, []es.Event{}, got)
+		})
+
+		t.Run("should publish events written", func(t *testing.T) {
+			// arrange
+			var (
+				sut          = es.NewInMemoryEventBus()
+				entityType   = newEntityType()
+				subscriberID = newSubscriberID()
+				got          []es.Event
+				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+					got = append(got, event)
+					return nil
+				})
+				events = newEventList(entityType, 3)
+			)
+
+			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+
+			// act
+			err := sut.WriteTo(ctx, entityType, seqs.Seq2(events...), subscriberID)
+
+			// assert
+			assert.NoError(t, err)
+			assert.EqualSlice(t, events, got)
+		})
+
+		t.Run("should fail with publish", func(t *testing.T) {
+			// arrange
+			var (
+				sut          = es.NewInMemoryEventBus()
+				entityType   = newEntityType()
+				subscriberID = newSubscriberID()
+				got          []es.Event
+				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+					got = append(got, event)
+					return errors.New("FAIL")
+				})
+				events = newEventList(entityType, 3)
+			)
+
+			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+
+			// act
+			err := sut.WriteTo(ctx, entityType, seqs.Seq2(events...), subscriberID)
+
+			// assert
+			assert.Error(t, err)
+			assert.EqualSlice(t, events[0:1], got)
+		})
+
+		t.Run("should fail with sequence", func(t *testing.T) {
+			// arrange
+			var (
+				sut          = es.NewInMemoryEventBus()
+				entityType   = newEntityType()
+				subscriberID = newSubscriberID()
+				got          []es.Event
+				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+					got = append(got, event)
+					return errors.New("FAIL")
+				})
+				events = maps.All(map[es.Event]error{
+					es.Event{}: errors.New("FAIL"),
+				})
+			)
+
+			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+
+			// act
+			err := sut.WriteTo(ctx, entityType, events, subscriberID)
+
+			// assert
+			assert.Error(t, err)
+			assert.EqualSlice(t, []es.Event{}, got)
 		})
 	})
 }
