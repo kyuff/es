@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"iter"
 	"reflect"
-	"regexp"
 	"testing"
 	"time"
 )
@@ -122,84 +121,6 @@ func NotNil(t *testing.T, got any) bool {
 	return true
 }
 
-func Match[T ~string](t *testing.T, expectedRE string, got T) bool {
-	t.Helper()
-	re, err := regexp.Compile(expectedRE)
-	if err != nil {
-		t.Fatalf("unexpected regexp: %s", err)
-		return false
-	}
-
-	match := re.MatchString(string(got))
-	if !match {
-		t.Logf(`
-Must match %q
-       Got %q`, expectedRE, got)
-		t.Fail()
-		return false
-	}
-
-	return true
-}
-
-func OneOf[T comparable](t *testing.T, items []T, got T) bool {
-	t.Helper()
-	var found = false
-	for _, item := range items {
-		if item == got {
-			found = true
-		}
-	}
-
-	if !found {
-		t.Logf("Input list: %v", items)
-		t.Logf("Did not contain item: %v", got)
-		t.Fail()
-		return false
-	}
-
-	return true
-}
-
-func NoneZero[T any, E ~[]T](t *testing.T, got E) bool {
-	t.Helper()
-	for _, e := range got {
-		if reflect.ValueOf(e).IsZero() {
-			return false
-		}
-	}
-
-	return true
-}
-
-func NotZero[T any](t *testing.T, got T) bool {
-	t.Helper()
-	if reflect.ValueOf(got).IsZero() {
-		t.Logf("Value %T was zero: %v", got, got)
-		t.Fail()
-	}
-	return true
-}
-
-func TimeWithinWindow(t *testing.T, expected time.Time, got time.Time, window time.Duration) bool {
-	var (
-		from = expected.Add(-1 * window)
-		to   = expected.Add(window)
-	)
-
-	if got.Before(from) {
-		t.Logf("Time was before the window by %s", from.Sub(got))
-		t.Fail()
-	}
-
-	if got.After(to) {
-		t.Logf("Time was after the window by %s", got.Sub(to))
-		t.Fail()
-	}
-
-	return true
-}
-
 func NoError(t *testing.T, got error) bool {
 	t.Helper()
 	if got != nil {
@@ -231,4 +152,29 @@ func Truef(t *testing.T, got bool, format string, args ...any) bool {
 	}
 
 	return true
+}
+
+func Panic(t *testing.T, assert func()) {
+	t.Helper()
+	defer func() {
+		if m := recover(); m != nil {
+			return
+		}
+		t.Logf(`Expected panic, but it did not happen!`)
+		t.Fail()
+	}()
+
+	assert()
+}
+
+func NoPanic(t *testing.T, assert func()) {
+	t.Helper()
+	defer func() {
+		if m := recover(); m != nil {
+			t.Logf("Unexpected panic: %v", m)
+			t.Fail()
+		}
+	}()
+
+	assert()
 }
