@@ -60,4 +60,21 @@ func TestConcat2(t *testing.T) {
 			assert.EqualSlice(t, tt.want, got)
 		})
 	}
+
+	t.Run("support breaking", func(t *testing.T) {
+		// arrange
+		var (
+			sut = seqs.Concat2(seqs.Seq2(1, 2), seqs.Seq2(3, 4, 5))
+			got = []int{}
+		)
+
+		// act
+		for v, _ := range sut {
+			got = append(got, v)
+			if len(got) > 3 {
+				break
+			}
+		}
+		assert.EqualSlice(t, []int{1, 2, 3, 4}, got)
+	})
 }
