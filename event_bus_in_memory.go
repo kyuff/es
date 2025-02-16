@@ -110,7 +110,7 @@ func (bus *InMemoryEventBus) Subscribe(ctx context.Context, entityType, subscrib
 	}
 
 	if _, ok := bus.subMap[entityType][subscriberID]; ok {
-		return fmt.Errorf("subscriber already exists: %s.%s", entityType, subscriberID)
+		return fmt.Errorf("subscriber already exists: %s.%s", entityType, sub.ID())
 	}
 
 	bus.subMap[entityType][subscriberID] = sub
