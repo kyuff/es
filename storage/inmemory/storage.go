@@ -19,7 +19,6 @@ func New() *Storage {
 		uniqueIndex: make(map[indexKey]int),
 		codec:       codecs.NewJSON(),
 		outbox:      make(chan es.Event, 1000),
-		closed:      make(chan struct{}),
 	}
 }
 
@@ -35,11 +34,30 @@ type Storage struct {
 	handlersMux sync.RWMutex
 	handlers    []es.Handler
 	writer      Writer
-	closed      chan struct{}
 }
 
-func (s *Storage) GetEntityIDs(ctx context.Context, entityType string, storeStreamID string, limit int64) ([]string, string, error) {
-	return nil, "", fmt.Errorf("not implemented")
+func (s *Storage) GetEntityIDs(ctx context.Context, entityType string, storeEntityID string, limit int64) ([]string, string, error) {
+	s.tablesMux.RLock()
+	defer s.tablesMux.RUnlock()
+
+	var ids []string
+	var token = ""
+	for _, row := range s.table {
+		if entityType != row.EntityType {
+			continue
+		}
+
+		if storeEntityID <= row.StoreEntityID {
+			ids = append(ids, row.EntityID)
+			token = row.StoreEntityID
+		}
+
+		if len(ids) >= int(limit) {
+			break
+		}
+	}
+
+	return ids, token, nil
 }
 
 func (s *Storage) Write(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
@@ -132,25 +150,18 @@ func (s *Storage) Register(entityType string, contentTypes ...es.Content) error 
 	return s.codec.Register(entityType, contentTypes...)
 }
 
-func (s *Storage) Close() error {
-	s.closed <- struct{}{}
-	close(s.closed)
-	return nil
-}
-
-func (s *Storage) StartPublish(bus es.Writer) error {
+func (s *Storage) StartPublish(ctx context.Context, bus es.Writer) error {
 	s.writer = bus
-	go s.startOutbox()
+	go s.startOutbox(ctx)
 	return nil
 }
 
-func (s *Storage) startOutbox() {
+func (s *Storage) startOutbox(ctx context.Context) {
 	for {
 		select {
-		case <-s.closed:
+		case <-ctx.Done():
 			return
 		case event := <-s.outbox:
-			ctx := context.Background() // TODO
 			err := s.writer.Write(ctx, event.EntityType, func(yield func(es.Event, error) bool) {
 				_ = yield(event, nil)
 			})

@@ -70,7 +70,7 @@ func (s *Store) GetSubscriberIDs(ctx context.Context, entityType string) ([]stri
 // Start starts the store by starting the storage and the event bus
 // The method is blocking and will return when the store is closed.
 // The method will return an error if the storage fails to publish events.
-func (s *Store) Start() error {
+func (s *Store) Start(ctx context.Context) error {
 	for entityType, contentTypes := range s.cfg.contentTypes {
 		err := s.storage.Register(entityType, contentTypes...)
 		if err != nil {
@@ -78,14 +78,11 @@ func (s *Store) Start() error {
 		}
 	}
 
-	return s.storage.StartPublish(newUpgradeWriter(s.cfg.eventBus, s.cfg.eventUpgrades))
+	return s.storage.StartPublish(ctx, newUpgradeWriter(s.cfg.eventBus, s.cfg.eventUpgrades))
 }
 
 func (s *Store) Close() error {
-	return errors.Join(
-		s.storage.Close(),
-		s.cfg.eventBus.Close(),
-	)
+	return s.cfg.eventBus.Close()
 }
 
 func (s *Store) getStreamReader(entityType string) Reader {

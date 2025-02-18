@@ -13,6 +13,7 @@ import (
 	"github.com/kyuff/es/internal/assert"
 	"github.com/kyuff/es/internal/eventassert"
 	"github.com/kyuff/es/internal/seqs"
+	"github.com/kyuff/es/internal/uuid"
 	"github.com/kyuff/es/storage/inmemory"
 )
 
@@ -48,10 +49,12 @@ func TestStorage(t *testing.T) {
 		newEvents = func(entityType string, count int) []es.Event {
 			var entityID = fmt.Sprintf("EntityID-%d-%d", count, rand.Int63())
 			var events []es.Event
+			var storeEntityIDs = uuid.V7At(time.Now(), count)
 			for i := 1; i <= count; i++ {
 				events = append(events, newEvent(int64(i), func(e *es.Event) {
 					e.EntityType = entityType
 					e.EntityID = entityID
+					e.StoreEntityID = storeEntityIDs[i-1]
 				}))
 			}
 
@@ -76,7 +79,7 @@ func TestStorage(t *testing.T) {
 			sut        = inmemory.New()
 		)
 
-		assert.NoError(t, sut.StartPublish(writer))
+		assert.NoError(t, sut.StartPublish(t.Context(), writer))
 
 		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
 			return nil
@@ -129,9 +132,7 @@ func TestStorage(t *testing.T) {
 
 		wg.Add(len(events))
 		assert.NoError(t, sut.Register(events[0].EntityType, MockEvent{}))
-		t.Cleanup(func() {
-			_ = sut.Close()
-		})
+
 		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
 			got = seqs.Concat2(got, events)
 			wg.Done()
@@ -141,7 +142,7 @@ func TestStorage(t *testing.T) {
 		assert.NoError(t, sut.Write(ctx, entityType, expected))
 
 		// act
-		err := sut.StartPublish(writer)
+		err := sut.StartPublish(t.Context(), writer)
 
 		// assert
 		wg.Wait()
@@ -174,7 +175,7 @@ func TestStorage(t *testing.T) {
 
 		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(eventA)))
 
-		assert.NoError(t, sut.StartPublish(writer))
+		assert.NoError(t, sut.StartPublish(t.Context(), writer))
 
 		// act
 		err := sut.Write(ctx, entityType, seqs.Seq2(eventB))
@@ -211,5 +212,87 @@ func TestStorage(t *testing.T) {
 
 		// assert
 		assert.Error(t, err)
+	})
+
+	t.Run("return entity ids written", func(t *testing.T) {
+		// arrange
+		var (
+			entityType = newEntityType()
+			events     = newEvents(entityType, 5)
+			writer     = &WriterMock{}
+			sut        = inmemory.New()
+		)
+
+		assert.NoError(t, sut.StartPublish(t.Context(), writer))
+
+		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+			return nil
+		}
+
+		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
+
+		// act
+		got, pageToken, err := sut.GetEntityIDs(t.Context(), entityType, "", 10)
+
+		// assert
+		assert.NoError(t, err)
+		var ids []string
+		for _, event := range events {
+			ids = append(ids, event.EntityID)
+		}
+		if assert.EqualSlice(t, ids, got) {
+			assert.Truef(t, events[len(events)-1].StoreEntityID == pageToken, "got page token %v", got)
+		}
+	})
+
+	t.Run("return entity ids written with limit", func(t *testing.T) {
+		// arrange
+		var (
+			entityType = newEntityType()
+			events     = newEvents(entityType, 10)
+			writer     = &WriterMock{}
+			sut        = inmemory.New()
+		)
+
+		assert.NoError(t, sut.StartPublish(t.Context(), writer))
+
+		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+			return nil
+		}
+
+		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
+
+		// act
+		got, _, err := sut.GetEntityIDs(t.Context(), entityType, "", 5)
+
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, 5, len(got))
+	})
+
+	t.Run("return entity ids from same entity type", func(t *testing.T) {
+		// arrange
+		var (
+			entityType = newEntityType()
+			events     = newEvents(entityType, 10)
+			writer     = &WriterMock{}
+			sut        = inmemory.New()
+		)
+
+		assert.NoError(t, sut.StartPublish(t.Context(), writer))
+
+		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+			return nil
+		}
+
+		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(newEvents(newEntityType(), 10)...)))
+		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
+
+		// act
+		got, _, err := sut.GetEntityIDs(t.Context(), entityType, "", 5)
+
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, 5, len(got))
 	})
 }

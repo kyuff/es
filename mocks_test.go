@@ -160,9 +160,6 @@ var _ es.Storage = &StorageMock{}
 //
 //		// make and configure a mocked es.Storage
 //		mockedStorage := &StorageMock{
-//			CloseFunc: func() error {
-//				panic("mock out the Close method")
-//			},
 //			GetEntityIDsFunc: func(ctx context.Context, entityType string, storeEntityID string, limit int64) ([]string, string, error) {
 //				panic("mock out the GetEntityIDs method")
 //			},
@@ -172,7 +169,7 @@ var _ es.Storage = &StorageMock{}
 //			RegisterFunc: func(entityType string, types ...es.Content) error {
 //				panic("mock out the Register method")
 //			},
-//			StartPublishFunc: func(w es.Writer) error {
+//			StartPublishFunc: func(ctx context.Context, w es.Writer) error {
 //				panic("mock out the StartPublish method")
 //			},
 //			WriteFunc: func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
@@ -185,9 +182,6 @@ var _ es.Storage = &StorageMock{}
 //
 //	}
 type StorageMock struct {
-	// CloseFunc mocks the Close method.
-	CloseFunc func() error
-
 	// GetEntityIDsFunc mocks the GetEntityIDs method.
 	GetEntityIDsFunc func(ctx context.Context, entityType string, storeEntityID string, limit int64) ([]string, string, error)
 
@@ -198,16 +192,13 @@ type StorageMock struct {
 	RegisterFunc func(entityType string, types ...es.Content) error
 
 	// StartPublishFunc mocks the StartPublish method.
-	StartPublishFunc func(w es.Writer) error
+	StartPublishFunc func(ctx context.Context, w es.Writer) error
 
 	// WriteFunc mocks the Write method.
 	WriteFunc func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// Close holds details about calls to the Close method.
-		Close []struct {
-		}
 		// GetEntityIDs holds details about calls to the GetEntityIDs method.
 		GetEntityIDs []struct {
 			// Ctx is the ctx argument value.
@@ -239,6 +230,8 @@ type StorageMock struct {
 		}
 		// StartPublish holds details about calls to the StartPublish method.
 		StartPublish []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// W is the w argument value.
 			W es.Writer
 		}
@@ -252,39 +245,11 @@ type StorageMock struct {
 			Events iter.Seq2[es.Event, error]
 		}
 	}
-	lockClose        sync.RWMutex
 	lockGetEntityIDs sync.RWMutex
 	lockRead         sync.RWMutex
 	lockRegister     sync.RWMutex
 	lockStartPublish sync.RWMutex
 	lockWrite        sync.RWMutex
-}
-
-// Close calls CloseFunc.
-func (mock *StorageMock) Close() error {
-	if mock.CloseFunc == nil {
-		panic("StorageMock.CloseFunc: method is nil but Storage.Close was just called")
-	}
-	callInfo := struct {
-	}{}
-	mock.lockClose.Lock()
-	mock.calls.Close = append(mock.calls.Close, callInfo)
-	mock.lockClose.Unlock()
-	return mock.CloseFunc()
-}
-
-// CloseCalls gets all the calls that were made to Close.
-// Check the length with:
-//
-//	len(mockedStorage.CloseCalls())
-func (mock *StorageMock) CloseCalls() []struct {
-} {
-	var calls []struct {
-	}
-	mock.lockClose.RLock()
-	calls = mock.calls.Close
-	mock.lockClose.RUnlock()
-	return calls
 }
 
 // GetEntityIDs calls GetEntityIDsFunc.
@@ -412,19 +377,21 @@ func (mock *StorageMock) RegisterCalls() []struct {
 }
 
 // StartPublish calls StartPublishFunc.
-func (mock *StorageMock) StartPublish(w es.Writer) error {
+func (mock *StorageMock) StartPublish(ctx context.Context, w es.Writer) error {
 	if mock.StartPublishFunc == nil {
 		panic("StorageMock.StartPublishFunc: method is nil but Storage.StartPublish was just called")
 	}
 	callInfo := struct {
-		W es.Writer
+		Ctx context.Context
+		W   es.Writer
 	}{
-		W: w,
+		Ctx: ctx,
+		W:   w,
 	}
 	mock.lockStartPublish.Lock()
 	mock.calls.StartPublish = append(mock.calls.StartPublish, callInfo)
 	mock.lockStartPublish.Unlock()
-	return mock.StartPublishFunc(w)
+	return mock.StartPublishFunc(ctx, w)
 }
 
 // StartPublishCalls gets all the calls that were made to StartPublish.
@@ -432,10 +399,12 @@ func (mock *StorageMock) StartPublish(w es.Writer) error {
 //
 //	len(mockedStorage.StartPublishCalls())
 func (mock *StorageMock) StartPublishCalls() []struct {
-	W es.Writer
+	Ctx context.Context
+	W   es.Writer
 } {
 	var calls []struct {
-		W es.Writer
+		Ctx context.Context
+		W   es.Writer
 	}
 	mock.lockStartPublish.RLock()
 	calls = mock.calls.StartPublish
