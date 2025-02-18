@@ -323,14 +323,14 @@ func TestStore(t *testing.T) {
 				got []es.Event
 			)
 
-			storage.StartPublishFunc = func(w es.Writer) error {
+			storage.StartPublishFunc = func(ctx context.Context, w es.Writer) error {
 				eventBus = w
 				return nil
 			}
 			storage.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
 				return eventBus.Write(ctx, entityType, events)
 			}
-			assert.NoError(t, store.Start())
+			assert.NoError(t, store.Start(t.Context()))
 
 			assert.NoError(t, store.Subscribe(ctx, entityType, subscriberID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 				got = append(got, event)
