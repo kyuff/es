@@ -70,16 +70,19 @@ func TestStorage(t *testing.T) {
 			return events
 		}
 	)
-	t.Run("should write events", func(t *testing.T) {
+	t.Run("write events with no error", func(t *testing.T) {
 		// arrange
 		var (
-			entityType = newEntityType()
-			events     = seqs.Seq2(newEvents(entityType, 5)...)
-			writer     = &WriterMock{}
-			sut        = inmemory.New()
+			ctx, cancel = context.WithCancel(t.Context())
+			entityType  = newEntityType()
+			events      = seqs.Seq2(newEvents(entityType, 5)...)
+			writer      = &WriterMock{}
+			sut         = inmemory.New()
 		)
 
-		assert.NoError(t, sut.StartPublish(t.Context(), writer))
+		go func() {
+			assert.NoError(t, sut.StartPublish(ctx, writer))
+		}()
 
 		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
 			return nil
@@ -90,9 +93,10 @@ func TestStorage(t *testing.T) {
 
 		// assert
 		assert.NoError(t, err)
+		cancel()
 	})
 
-	t.Run("should read events", func(t *testing.T) {
+	t.Run("read events written", func(t *testing.T) {
 		// arrange
 		var (
 			entityType = newEntityType()
@@ -118,16 +122,17 @@ func TestStorage(t *testing.T) {
 		})
 	})
 
-	t.Run("should publish events", func(t *testing.T) {
+	t.Run("publish events after write", func(t *testing.T) {
 		// arrange
 		var (
-			entityType = newEntityType()
-			events     = newEvents(entityType, 5)
-			expected   = seqs.Seq2(events...)
-			writer     = &WriterMock{}
-			sut        = inmemory.New()
-			got        = seqs.EmptySeq2[es.Event, error]()
-			wg         sync.WaitGroup
+			ctx, cancel = context.WithCancel(t.Context())
+			entityType  = newEntityType()
+			events      = newEvents(entityType, 5)
+			expected    = seqs.Seq2(events...)
+			writer      = &WriterMock{}
+			sut         = inmemory.New()
+			got         = seqs.EmptySeq2[es.Event, error]()
+			wg          sync.WaitGroup
 		)
 
 		wg.Add(len(events))
@@ -141,23 +146,29 @@ func TestStorage(t *testing.T) {
 
 		assert.NoError(t, sut.Write(ctx, entityType, expected))
 
-		// act
-		err := sut.StartPublish(t.Context(), writer)
+		go func() {
+			// act
+			err := sut.StartPublish(ctx, writer)
+
+			// assert
+			assert.NoError(t, err)
+		}()
 
 		// assert
 		wg.Wait()
-		assert.NoError(t, err)
 		assert.EqualSeq2(t, expected, got, func(expected, got assert.KeyValue[es.Event, error]) bool {
 			return eventassert.EqualEvent(t, expected.Key, got.Key)
 		})
+		cancel()
 	})
 
-	t.Run("should not write same event number", func(t *testing.T) {
+	t.Run("write no events with same event number", func(t *testing.T) {
 		// arrange
 		var (
-			entityType = "entityType"
-			entityID   = "entityID"
-			eventA     = newEvent(1, func(e *es.Event) {
+			ctx, cancel = context.WithCancel(t.Context())
+			entityType  = "entityType"
+			entityID    = "entityID"
+			eventA      = newEvent(1, func(e *es.Event) {
 				e.EntityType = entityType
 				e.EntityID = entityID
 			})
@@ -175,16 +186,22 @@ func TestStorage(t *testing.T) {
 
 		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(eventA)))
 
-		assert.NoError(t, sut.StartPublish(t.Context(), writer))
+		go func() {
+			err := sut.StartPublish(ctx, writer)
+
+			// assert
+			assert.NoError(t, err)
+		}()
 
 		// act
 		err := sut.Write(ctx, entityType, seqs.Seq2(eventB))
 
 		// assert
 		assert.Error(t, err)
+		cancel()
 	})
 
-	t.Run("should not write same events out of order", func(t *testing.T) {
+	t.Run("write no events out of order", func(t *testing.T) {
 		// arrange
 		var (
 			entityType = "entityType"
@@ -223,8 +240,6 @@ func TestStorage(t *testing.T) {
 			sut        = inmemory.New()
 		)
 
-		assert.NoError(t, sut.StartPublish(t.Context(), writer))
-
 		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
@@ -254,8 +269,6 @@ func TestStorage(t *testing.T) {
 			sut        = inmemory.New()
 		)
 
-		assert.NoError(t, sut.StartPublish(t.Context(), writer))
-
 		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
@@ -278,8 +291,6 @@ func TestStorage(t *testing.T) {
 			writer     = &WriterMock{}
 			sut        = inmemory.New()
 		)
-
-		assert.NoError(t, sut.StartPublish(t.Context(), writer))
 
 		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
 			return nil

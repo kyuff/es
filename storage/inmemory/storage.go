@@ -33,7 +33,6 @@ type Storage struct {
 
 	handlersMux sync.RWMutex
 	handlers    []es.Handler
-	writer      Writer
 }
 
 func (s *Storage) GetEntityIDs(ctx context.Context, entityType string, storeEntityID string, limit int64) ([]string, string, error) {
@@ -150,19 +149,13 @@ func (s *Storage) Register(entityType string, contentTypes ...es.Content) error 
 	return s.codec.Register(entityType, contentTypes...)
 }
 
-func (s *Storage) StartPublish(ctx context.Context, bus es.Writer) error {
-	s.writer = bus
-	go s.startOutbox(ctx)
-	return nil
-}
-
-func (s *Storage) startOutbox(ctx context.Context) {
+func (s *Storage) StartPublish(ctx context.Context, writer es.Writer) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return nil
 		case event := <-s.outbox:
-			err := s.writer.Write(ctx, event.EntityType, func(yield func(es.Event, error) bool) {
+			err := writer.Write(ctx, event.EntityType, func(yield func(es.Event, error) bool) {
 				_ = yield(event, nil)
 			})
 			if err != nil {
