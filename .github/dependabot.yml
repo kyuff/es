@@ -9,6 +9,9 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+      day: "sunday"
+      timezone: "Europe/Copenhagen"
+      time: "23:00"
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -17,3 +20,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "sunday"
+      timezone: "Europe/Copenhagen"
+      time: "23:00"
