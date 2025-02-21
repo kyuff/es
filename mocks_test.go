@@ -451,3 +451,75 @@ func (mock *StorageMock) WriteCalls() []struct {
 	mock.lockWrite.RUnlock()
 	return calls
 }
+
+// Ensure, that HandlerMock does implement es.Handler.
+// If this is not the case, regenerate this file with moq.
+var _ es.Handler = &HandlerMock{}
+
+// HandlerMock is a mock implementation of es.Handler.
+//
+//	func TestSomethingThatUsesHandler(t *testing.T) {
+//
+//		// make and configure a mocked es.Handler
+//		mockedHandler := &HandlerMock{
+//			HandleFunc: func(ctx context.Context, event es.Event) error {
+//				panic("mock out the Handle method")
+//			},
+//		}
+//
+//		// use mockedHandler in code that requires es.Handler
+//		// and then make assertions.
+//
+//	}
+type HandlerMock struct {
+	// HandleFunc mocks the Handle method.
+	HandleFunc func(ctx context.Context, event es.Event) error
+
+	// calls tracks calls to the methods.
+	calls struct {
+		// Handle holds details about calls to the Handle method.
+		Handle []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Event is the event argument value.
+			Event es.Event
+		}
+	}
+	lockHandle sync.RWMutex
+}
+
+// Handle calls HandleFunc.
+func (mock *HandlerMock) Handle(ctx context.Context, event es.Event) error {
+	if mock.HandleFunc == nil {
+		panic("HandlerMock.HandleFunc: method is nil but Handler.Handle was just called")
+	}
+	callInfo := struct {
+		Ctx   context.Context
+		Event es.Event
+	}{
+		Ctx:   ctx,
+		Event: event,
+	}
+	mock.lockHandle.Lock()
+	mock.calls.Handle = append(mock.calls.Handle, callInfo)
+	mock.lockHandle.Unlock()
+	return mock.HandleFunc(ctx, event)
+}
+
+// HandleCalls gets all the calls that were made to Handle.
+// Check the length with:
+//
+//	len(mockedHandler.HandleCalls())
+func (mock *HandlerMock) HandleCalls() []struct {
+	Ctx   context.Context
+	Event es.Event
+} {
+	var calls []struct {
+		Ctx   context.Context
+		Event es.Event
+	}
+	mock.lockHandle.RLock()
+	calls = mock.calls.Handle
+	mock.lockHandle.RUnlock()
+	return calls
+}
