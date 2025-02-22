@@ -20,7 +20,7 @@ func VerifyEvents(t *testing.T, events []Content, expected ...any) bool {
 		}
 		sb.WriteString("\n Got events:\n")
 		for _, e := range events {
-			sb.WriteString(fmt.Sprintf("  - %s\n", e.Name()))
+			sb.WriteString(fmt.Sprintf("  - %s\n", e.EventName()))
 		}
 		t.Log(sb.String())
 		return false

@@ -40,7 +40,7 @@ func newData(event es.Event, c *codecs.JSON) (tableRow, error) {
 		StoreEntityID: event.StoreEntityID,
 		EventTime:     event.EventTime.Format(time.RFC3339),
 		Content:       eventData,
-		ContentName:   event.Content.Name(),
+		ContentName:   event.Content.EventName(),
 	}, nil
 }
 

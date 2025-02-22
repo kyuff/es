@@ -2,12 +2,12 @@ package es_test
 
 type EventMock struct{ ID int }
 
-func (EventMock) Name() string {
+func (EventMock) EventName() string {
 	return "EventMock"
 }
 
 type UpgradedEventMock struct{ Number int }
 
-func (UpgradedEventMock) Name() string {
+func (UpgradedEventMock) EventName() string {
 	return "UpgradedEventMock"
 }

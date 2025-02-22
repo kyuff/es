@@ -21,7 +21,7 @@ type MockEvent struct {
 	ID int64
 }
 
-func (e MockEvent) Name() string {
+func (e MockEvent) EventName() string {
 	return "MockEvent"
 }
 

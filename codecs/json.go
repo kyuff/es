@@ -45,7 +45,7 @@ func (j *JSON) Register(entityType string, contentTypes ...es.Content) error {
 	for _, contentType := range contentTypes {
 		key := contentKey{
 			entityType:  entityType,
-			contentName: contentType.Name(),
+			contentName: contentType.EventName(),
 		}
 		j.content[key] = reflect.TypeOf(contentType)
 	}
