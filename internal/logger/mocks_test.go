@@ -74,7 +74,7 @@ type HandlerMock struct {
 		}
 		// WithGroup holds details about calls to the WithGroup method.
 		WithGroup []struct {
-			// EventName is the name argument value.
+			// Name is the name argument value.
 			Name string
 		}
 	}
