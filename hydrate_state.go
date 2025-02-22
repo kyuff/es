@@ -8,8 +8,8 @@ import (
 	"github.com/kyuff/es/internal/uuid"
 )
 
-// ApplyState is a test helper meant to make it easy to hydrate a state using event data.
-func ApplyState[T Handler](t *testing.T, state T, contents ...Content) T {
+// HydrateState is a test helper meant to make it easy to hydrate a state using event data.
+func HydrateState[T Handler](t *testing.T, state T, contents ...Content) T {
 	t.Helper()
 	if len(contents) == 0 {
 		return state

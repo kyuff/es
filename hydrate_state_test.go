@@ -17,7 +17,7 @@ func TestApplyState(t *testing.T) {
 		)
 
 		// act
-		got := es.ApplyState(t, state)
+		got := es.HydrateState(t, state)
 
 		// assert
 		assert.Equal(t, state, got)
@@ -35,7 +35,7 @@ func TestApplyState(t *testing.T) {
 		}
 
 		// act
-		got := es.ApplyState(tt, state, EventMock{})
+		got := es.HydrateState(tt, state, EventMock{})
 
 		// assert
 		assert.Equal(t, state, got)
@@ -60,7 +60,7 @@ func TestApplyState(t *testing.T) {
 		}
 
 		// act
-		got := es.ApplyState(t, state, expected...)
+		got := es.HydrateState(t, state, expected...)
 
 		// assert
 		assert.Equal(t, state, got)
