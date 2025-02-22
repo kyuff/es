@@ -4,7 +4,7 @@ import "time"
 
 // Content is the application specific data model used in an Event.
 type Content interface {
-	Name() string
+	EventName() string
 }
 
 // Event is a combination of the metadata and content of a business event in the system.

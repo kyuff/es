@@ -14,7 +14,7 @@ type EventMock struct {
 	ID int `json:"id"`
 }
 
-func (EventMock) Name() string {
+func (EventMock) EventName() string {
 	return "EventMock"
 }
 
