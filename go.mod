@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/gofrs/uuid/v5 v5.3.1
-	golang.org/x/sync v0.14.0
+	golang.org/x/sync v0.15.0
 )
 
 require (
