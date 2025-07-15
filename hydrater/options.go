@@ -88,10 +88,6 @@ func defaultMaker[T any]() func(ctx context.Context, id string) (T, error) {
 
 func defaultChecker[T es.Handler]() func(state T) bool {
 	return func(state T) bool {
-		if any(state) == nil {
-			return false
-		}
-
 		return true
 	}
 }
