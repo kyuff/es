@@ -69,7 +69,7 @@ func TestStore(t *testing.T) {
 				entityID   = newEntityID()
 				storage    = &StorageMock{}
 				events     = newEvents(3, entityID, entityType)
-				store      = es.NewStore(storage)
+				store      = es.NewStore(storage, es.WithEvents(entityType, []es.Content{EventMock{}}))
 
 				got []es.Event
 			)
@@ -167,6 +167,20 @@ func TestStore(t *testing.T) {
 			// assert
 			assert.NoError(t, err)
 			assert.Equal(t, 1, len(storage.ReadCalls()))
+		})
+
+		t.Run("support logging", func(t *testing.T) {
+			// arrange
+			var (
+				storage = &StorageMock{}
+				store   = es.NewStore(storage, es.WithDefaultSlog())
+			)
+
+			// act
+			err := store.Close()
+
+			// assert
+			assert.NoError(t, err)
 		})
 	})
 
