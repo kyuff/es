@@ -11,7 +11,7 @@ import (
 )
 
 type Writer interface {
-	Write(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error
+	Write(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error
 }
 
 func New() *Storage {
@@ -42,13 +42,13 @@ func (s *Storage) GetStreamIDs(ctx context.Context, streamType string, storeStre
 	var ids []string
 	var token = ""
 	for _, row := range s.table {
-		if streamType != row.EntityType {
+		if streamType != row.StreamType {
 			continue
 		}
 
-		if storeStreamID <= row.StoreEntityID {
-			ids = append(ids, row.EntityID)
-			token = row.StoreEntityID
+		if storeStreamID <= row.StoreStreamID {
+			ids = append(ids, row.StreamID)
+			token = row.StoreStreamID
 		}
 
 		if len(ids) >= int(limit) {
@@ -76,8 +76,8 @@ func (s *Storage) Write(ctx context.Context, streamType string, events iter.Seq2
 
 func (s *Storage) writeEvent(ctx context.Context, event es.Event) error {
 	key := indexKey{
-		EntityType:  event.StreamType,
-		EntityID:    event.StreamID,
+		StreamType:  event.StreamType,
+		StreamID:    event.StreamID,
 		EventNumber: event.EventNumber,
 	}
 	s.tablesMux.Lock()
@@ -94,8 +94,8 @@ func (s *Storage) writeEvent(ctx context.Context, event es.Event) error {
 	}
 
 	_, isNext := s.uniqueIndex[indexKey{
-		EntityType:  event.StreamType,
-		EntityID:    event.StreamID,
+		StreamType:  event.StreamType,
+		StreamID:    event.StreamID,
 		EventNumber: event.EventNumber - 1,
 	}]
 	if !isNext && event.EventNumber > 1 {
@@ -117,8 +117,8 @@ func (s *Storage) Read(ctx context.Context, streamType string, streamID string, 
 		defer s.tablesMux.RUnlock()
 
 		key := indexKey{
-			EntityType:  streamType,
-			EntityID:    streamID,
+			StreamType:  streamType,
+			StreamID:    streamID,
 			EventNumber: eventNumber + 1,
 		}
 
@@ -145,8 +145,8 @@ func (s *Storage) Read(ctx context.Context, streamType string, streamID string, 
 	}
 }
 
-func (s *Storage) Register(entityType string, contentTypes ...es.Content) error {
-	return s.codec.Register(entityType, contentTypes...)
+func (s *Storage) Register(streamType string, contentTypes ...es.Content) error {
+	return s.codec.Register(streamType, contentTypes...)
 }
 
 func (s *Storage) StartPublish(ctx context.Context, writer es.Writer) error {

@@ -21,7 +21,7 @@ var _ inmemory.Writer = &WriterMock{}
 //
 //		// make and configure a mocked inmemory.Writer
 //		mockedWriter := &WriterMock{
-//			WriteFunc: func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+//			WriteFunc: func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 //				panic("mock out the Write method")
 //			},
 //		}
@@ -32,7 +32,7 @@ var _ inmemory.Writer = &WriterMock{}
 //	}
 type WriterMock struct {
 	// WriteFunc mocks the Write method.
-	WriteFunc func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error
+	WriteFunc func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -40,8 +40,8 @@ type WriterMock struct {
 		Write []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// EntityType is the entityType argument value.
-			EntityType string
+			// StreamType is the streamType argument value.
+			StreamType string
 			// Events is the events argument value.
 			Events iter.Seq2[es.Event, error]
 		}
@@ -50,23 +50,23 @@ type WriterMock struct {
 }
 
 // Write calls WriteFunc.
-func (mock *WriterMock) Write(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+func (mock *WriterMock) Write(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 	if mock.WriteFunc == nil {
 		panic("WriterMock.WriteFunc: method is nil but Writer.Write was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
-		EntityType string
+		StreamType string
 		Events     iter.Seq2[es.Event, error]
 	}{
 		Ctx:        ctx,
-		EntityType: entityType,
+		StreamType: streamType,
 		Events:     events,
 	}
 	mock.lockWrite.Lock()
 	mock.calls.Write = append(mock.calls.Write, callInfo)
 	mock.lockWrite.Unlock()
-	return mock.WriteFunc(ctx, entityType, events)
+	return mock.WriteFunc(ctx, streamType, events)
 }
 
 // WriteCalls gets all the calls that were made to Write.
@@ -75,12 +75,12 @@ func (mock *WriterMock) Write(ctx context.Context, entityType string, events ite
 //	len(mockedWriter.WriteCalls())
 func (mock *WriterMock) WriteCalls() []struct {
 	Ctx        context.Context
-	EntityType string
+	StreamType string
 	Events     iter.Seq2[es.Event, error]
 } {
 	var calls []struct {
 		Ctx        context.Context
-		EntityType string
+		StreamType string
 		Events     iter.Seq2[es.Event, error]
 	}
 	mock.lockWrite.RLock()

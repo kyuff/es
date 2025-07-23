@@ -43,18 +43,18 @@ func TestStorage(t *testing.T) {
 
 			return e
 		}
-		newEntityType = func() string {
+		newStreamType = func() string {
 			return fmt.Sprintf("StreamType-%d", rand.Int63())
 		}
-		newEvents = func(entityType string, count int) []es.Event {
-			var entityID = fmt.Sprintf("StreamID-%d-%d", count, rand.Int63())
+		newEvents = func(streamType string, count int) []es.Event {
+			var streamID = fmt.Sprintf("StreamID-%d-%d", count, rand.Int63())
 			var events []es.Event
-			var storeEntityIDs = uuid.V7At(time.Now(), count)
+			var storeStreamIDs = uuid.V7At(time.Now(), count)
 			for i := 1; i <= count; i++ {
 				events = append(events, newEvent(int64(i), func(e *es.Event) {
-					e.StreamType = entityType
-					e.StreamID = entityID
-					e.StoreStreamID = storeEntityIDs[i-1]
+					e.StreamType = streamType
+					e.StreamID = streamID
+					e.StoreStreamID = storeStreamIDs[i-1]
 				}))
 			}
 
@@ -74,8 +74,8 @@ func TestStorage(t *testing.T) {
 		// arrange
 		var (
 			ctx, cancel = context.WithCancel(t.Context())
-			entityType  = newEntityType()
-			events      = seqs.Seq2(newEvents(entityType, 5)...)
+			streamType  = newStreamType()
+			events      = seqs.Seq2(newEvents(streamType, 5)...)
 			writer      = &WriterMock{}
 			sut         = inmemory.New()
 		)
@@ -84,12 +84,12 @@ func TestStorage(t *testing.T) {
 			assert.NoError(t, sut.StartPublish(ctx, writer))
 		}()
 
-		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
 
 		// act
-		err := sut.Write(ctx, entityType, events)
+		err := sut.Write(ctx, streamType, events)
 
 		// assert
 		assert.NoError(t, err)
@@ -99,13 +99,13 @@ func TestStorage(t *testing.T) {
 	t.Run("read events written", func(t *testing.T) {
 		// arrange
 		var (
-			entityType = newEntityType()
-			events     = newEvents(entityType, 5)
+			streamType = newStreamType()
+			events     = newEvents(streamType, 5)
 			sut        = inmemory.New()
 		)
 
 		assert.NoError(t, sut.Register(events[0].StreamType, MockEvent{}))
-		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
+		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(events...)))
 
 		// act
 		i := sut.Read(ctx, events[0].StreamType, events[0].StreamID, 0)
@@ -126,8 +126,8 @@ func TestStorage(t *testing.T) {
 		// arrange
 		var (
 			ctx, cancel = context.WithCancel(t.Context())
-			entityType  = newEntityType()
-			events      = newEvents(entityType, 5)
+			streamType  = newStreamType()
+			events      = newEvents(streamType, 5)
 			expected    = seqs.Seq2(events...)
 			writer      = &WriterMock{}
 			sut         = inmemory.New()
@@ -138,13 +138,13 @@ func TestStorage(t *testing.T) {
 		wg.Add(len(events))
 		assert.NoError(t, sut.Register(events[0].StreamType, MockEvent{}))
 
-		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			got = seqs.Concat2(got, events)
 			wg.Done()
 			return nil
 		}
 
-		assert.NoError(t, sut.Write(ctx, entityType, expected))
+		assert.NoError(t, sut.Write(ctx, streamType, expected))
 
 		go func() {
 			// act
@@ -166,25 +166,25 @@ func TestStorage(t *testing.T) {
 		// arrange
 		var (
 			ctx, cancel = context.WithCancel(t.Context())
-			entityType  = "entityType"
-			entityID    = "entityID"
+			streamType  = "streamType"
+			streamID    = "streamID"
 			eventA      = newEvent(1, func(e *es.Event) {
-				e.StreamType = entityType
-				e.StreamID = entityID
+				e.StreamType = streamType
+				e.StreamID = streamID
 			})
 			eventB = newEvent(1, func(e *es.Event) {
-				e.StreamType = entityType
-				e.StreamID = entityID
+				e.StreamType = streamType
+				e.StreamID = streamID
 			})
 			writer = &WriterMock{}
 			sut    = inmemory.New()
 		)
 
-		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
 
-		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(eventA)))
+		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(eventA)))
 
 		go func() {
 			err := sut.StartPublish(ctx, writer)
@@ -194,7 +194,7 @@ func TestStorage(t *testing.T) {
 		}()
 
 		// act
-		err := sut.Write(ctx, entityType, seqs.Seq2(eventB))
+		err := sut.Write(ctx, streamType, seqs.Seq2(eventB))
 
 		// assert
 		assert.Error(t, err)
@@ -204,50 +204,50 @@ func TestStorage(t *testing.T) {
 	t.Run("write no events out of order", func(t *testing.T) {
 		// arrange
 		var (
-			entityType = "entityType"
-			entityID   = "entityID"
+			streamType = "streamType"
+			streamID   = "streamID"
 			eventA     = newEvent(1, func(e *es.Event) {
-				e.StreamType = entityType
-				e.StreamID = entityID
+				e.StreamType = streamType
+				e.StreamID = streamID
 			})
 			eventB = newEvent(3, func(e *es.Event) {
-				e.StreamType = entityType
-				e.StreamID = entityID
+				e.StreamType = streamType
+				e.StreamID = streamID
 			})
 			writer = &WriterMock{}
 			sut    = inmemory.New()
 		)
 
-		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
 
-		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(eventA)))
+		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(eventA)))
 
 		// act
-		err := sut.Write(ctx, entityType, seqs.Seq2(eventB))
+		err := sut.Write(ctx, streamType, seqs.Seq2(eventB))
 
 		// assert
 		assert.Error(t, err)
 	})
 
-	t.Run("return entity ids written", func(t *testing.T) {
+	t.Run("return stream ids written", func(t *testing.T) {
 		// arrange
 		var (
-			entityType = newEntityType()
-			events     = newEvents(entityType, 5)
+			streamType = newStreamType()
+			events     = newEvents(streamType, 5)
 			writer     = &WriterMock{}
 			sut        = inmemory.New()
 		)
 
-		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
 
-		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
+		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(events...)))
 
 		// act
-		got, pageToken, err := sut.GetStreamIDs(t.Context(), entityType, "", 10)
+		got, pageToken, err := sut.GetStreamIDs(t.Context(), streamType, "", 10)
 
 		// assert
 		assert.NoError(t, err)
@@ -260,47 +260,47 @@ func TestStorage(t *testing.T) {
 		}
 	})
 
-	t.Run("return entity ids written with limit", func(t *testing.T) {
+	t.Run("return stream ids written with limit", func(t *testing.T) {
 		// arrange
 		var (
-			entityType = newEntityType()
-			events     = newEvents(entityType, 10)
+			streamType = newStreamType()
+			events     = newEvents(streamType, 10)
 			writer     = &WriterMock{}
 			sut        = inmemory.New()
 		)
 
-		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
 
-		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
+		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(events...)))
 
 		// act
-		got, _, err := sut.GetStreamIDs(t.Context(), entityType, "", 5)
+		got, _, err := sut.GetStreamIDs(t.Context(), streamType, "", 5)
 
 		// assert
 		assert.NoError(t, err)
 		assert.Equal(t, 5, len(got))
 	})
 
-	t.Run("return entity ids from same entity type", func(t *testing.T) {
+	t.Run("return stream ids from same stream type", func(t *testing.T) {
 		// arrange
 		var (
-			entityType = newEntityType()
-			events     = newEvents(entityType, 10)
+			streamType = newStreamType()
+			events     = newEvents(streamType, 10)
 			writer     = &WriterMock{}
 			sut        = inmemory.New()
 		)
 
-		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
 
-		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(newEvents(newEntityType(), 10)...)))
-		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
+		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(newEvents(newStreamType(), 10)...)))
+		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(events...)))
 
 		// act
-		got, _, err := sut.GetStreamIDs(t.Context(), entityType, "", 5)
+		got, _, err := sut.GetStreamIDs(t.Context(), streamType, "", 5)
 
 		// assert
 		assert.NoError(t, err)
