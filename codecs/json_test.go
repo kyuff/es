@@ -69,4 +69,20 @@ func TestJSON(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, in, got.(EventMock))
 	})
+
+	t.Run("should return error on invalid json", func(t *testing.T) {
+		// arrange
+		var (
+			sut        = codecs.NewJSON()
+			streamType = uuid.V7()
+		)
+
+		assert.NoError(t, sut.Register(streamType, EventMock{}))
+
+		// act
+		_, err := sut.Decode(streamType, "EventMock", []byte(`{ ... not json }`))
+
+		// assert
+		assert.Error(t, err)
+	})
 }
