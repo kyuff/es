@@ -13,8 +13,8 @@ import (
 func Test_EventUpgrades(t *testing.T) {
 	var (
 		ctx           = context.Background()
-		newEntityType = uuid.V7
-		newEntityID   = uuid.V7
+		newStreamType = uuid.V7
+		newStreamID   = uuid.V7
 		newEvent      = func(id, typ string, mods ...func(e *Event)) Event {
 			e := Event{
 				StreamID:     id,
@@ -30,9 +30,9 @@ func Test_EventUpgrades(t *testing.T) {
 		}
 		newEvents = func(c int, typ string) []Event {
 			var events []Event
-			var entityID = newEntityID()
+			var streamID = newStreamID()
 			for i := range c {
-				events = append(events, newEvent(entityID, typ, func(e *Event) {
+				events = append(events, newEvent(streamID, typ, func(e *Event) {
 					e.EventNumber = int64(i) + 1
 				}))
 			}
@@ -43,8 +43,8 @@ func Test_EventUpgrades(t *testing.T) {
 		t.Run("should upgrade events", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				events     = newEvents(3, entityType)
+				streamType = newStreamType()
+				events     = newEvents(3, streamType)
 				seq        = seqs.Seq2(events...)
 				calls      []int
 				upgrades   = []EventUpgrade{
@@ -61,17 +61,17 @@ func Test_EventUpgrades(t *testing.T) {
 						return i
 					}),
 				}
-				w = writerFunc(func(ctx context.Context, entityType string, events iter.Seq2[Event, error]) error {
+				w = writerFunc(func(ctx context.Context, streamType string, events iter.Seq2[Event, error]) error {
 					calls = append(calls, 4)
 					return nil
 				})
 				sut = newUpgradeWriter(w, map[string][]EventUpgrade{
-					entityType: upgrades,
+					streamType: upgrades,
 				})
 			)
 
 			// act
-			err := sut.Write(ctx, entityType, seq)
+			err := sut.Write(ctx, streamType, seq)
 
 			// assert
 			assert.NoError(t, err)
@@ -81,33 +81,33 @@ func Test_EventUpgrades(t *testing.T) {
 		t.Run("should write with no upgrades", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				events     = newEvents(3, entityType)
+				streamType = newStreamType()
+				events     = newEvents(3, streamType)
 				seq        = seqs.Seq2(events...)
 				calls      []int
 				upgrades   []EventUpgrade
-				w          = writerFunc(func(ctx context.Context, entityType string, events iter.Seq2[Event, error]) error {
+				w          = writerFunc(func(ctx context.Context, streamType string, events iter.Seq2[Event, error]) error {
 					calls = append(calls, 1)
 					return nil
 				})
 				sut = newUpgradeWriter(w, map[string][]EventUpgrade{
-					entityType: upgrades,
+					streamType: upgrades,
 				})
 			)
 
 			// act
-			err := sut.Write(ctx, entityType, seq)
+			err := sut.Write(ctx, streamType, seq)
 
 			// assert
 			assert.NoError(t, err)
 			assert.EqualSlice(t, []int{1}, calls)
 		})
 
-		t.Run("should write with no entity type", func(t *testing.T) {
+		t.Run("should write with no stream type", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				events     = newEvents(3, entityType)
+				streamType = newStreamType()
+				events     = newEvents(3, streamType)
 				seq        = seqs.Seq2(events...)
 				calls      []int
 				upgrades   = []EventUpgrade{
@@ -116,7 +116,7 @@ func Test_EventUpgrades(t *testing.T) {
 						return i
 					}),
 				}
-				w = writerFunc(func(ctx context.Context, entityType string, events iter.Seq2[Event, error]) error {
+				w = writerFunc(func(ctx context.Context, streamType string, events iter.Seq2[Event, error]) error {
 					calls = append(calls, 1)
 					return nil
 				})
@@ -126,7 +126,7 @@ func Test_EventUpgrades(t *testing.T) {
 			)
 
 			// act
-			err := sut.Write(ctx, entityType, seq)
+			err := sut.Write(ctx, streamType, seq)
 
 			// assert
 			assert.NoError(t, err)
@@ -138,8 +138,8 @@ func Test_EventUpgrades(t *testing.T) {
 		t.Run("should combine event upgrades", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				events     = newEvents(3, entityType)
+				streamType = newStreamType()
+				events     = newEvents(3, streamType)
 				seq        = seqs.Seq2(events...)
 				calls      []int
 				upgrades   = []EventUpgrade{
@@ -156,7 +156,7 @@ func Test_EventUpgrades(t *testing.T) {
 						return i
 					}),
 				}
-				w = writerFunc(func(ctx context.Context, entityType string, events iter.Seq2[Event, error]) error {
+				w = writerFunc(func(ctx context.Context, streamType string, events iter.Seq2[Event, error]) error {
 					calls = append(calls, 4)
 					return nil
 				})
@@ -164,7 +164,7 @@ func Test_EventUpgrades(t *testing.T) {
 			)
 
 			// act
-			err := sut.Write(ctx, entityType, seq)
+			err := sut.Write(ctx, streamType, seq)
 
 			// assert
 			assert.NoError(t, err)
