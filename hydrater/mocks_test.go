@@ -20,7 +20,7 @@ var _ hydrater.Projector = &ProjectorMock{}
 //
 //		// make and configure a mocked hydrater.Projector
 //		mockedProjector := &ProjectorMock{
-//			ProjectFunc: func(ctx context.Context, entityType string, entityID string, handler es.Handler) error {
+//			ProjectFunc: func(ctx context.Context, streamType string, streamID string, handler es.Handler) error {
 //				panic("mock out the Project method")
 //			},
 //		}
@@ -31,7 +31,7 @@ var _ hydrater.Projector = &ProjectorMock{}
 //	}
 type ProjectorMock struct {
 	// ProjectFunc mocks the Project method.
-	ProjectFunc func(ctx context.Context, entityType string, entityID string, handler es.Handler) error
+	ProjectFunc func(ctx context.Context, streamType string, streamID string, handler es.Handler) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -39,10 +39,10 @@ type ProjectorMock struct {
 		Project []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// EntityType is the entityType argument value.
-			EntityType string
-			// EntityID is the entityID argument value.
-			EntityID string
+			// StreamType is the streamType argument value.
+			StreamType string
+			// StreamID is the streamID argument value.
+			StreamID string
 			// Handler is the handler argument value.
 			Handler es.Handler
 		}
@@ -51,25 +51,25 @@ type ProjectorMock struct {
 }
 
 // Project calls ProjectFunc.
-func (mock *ProjectorMock) Project(ctx context.Context, entityType string, entityID string, handler es.Handler) error {
+func (mock *ProjectorMock) Project(ctx context.Context, streamType string, streamID string, handler es.Handler) error {
 	if mock.ProjectFunc == nil {
 		panic("ProjectorMock.ProjectFunc: method is nil but Projector.Project was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
-		EntityType string
-		EntityID   string
+		StreamType string
+		StreamID   string
 		Handler    es.Handler
 	}{
 		Ctx:        ctx,
-		EntityType: entityType,
-		EntityID:   entityID,
+		StreamType: streamType,
+		StreamID:   streamID,
 		Handler:    handler,
 	}
 	mock.lockProject.Lock()
 	mock.calls.Project = append(mock.calls.Project, callInfo)
 	mock.lockProject.Unlock()
-	return mock.ProjectFunc(ctx, entityType, entityID, handler)
+	return mock.ProjectFunc(ctx, streamType, streamID, handler)
 }
 
 // ProjectCalls gets all the calls that were made to Project.
@@ -78,14 +78,14 @@ func (mock *ProjectorMock) Project(ctx context.Context, entityType string, entit
 //	len(mockedProjector.ProjectCalls())
 func (mock *ProjectorMock) ProjectCalls() []struct {
 	Ctx        context.Context
-	EntityType string
-	EntityID   string
+	StreamType string
+	StreamID   string
 	Handler    es.Handler
 } {
 	var calls []struct {
 		Ctx        context.Context
-		EntityType string
-		EntityID   string
+		StreamType string
+		StreamID   string
 		Handler    es.Handler
 	}
 	mock.lockProject.RLock()

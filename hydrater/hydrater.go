@@ -10,19 +10,19 @@ import (
 )
 
 type Projector interface {
-	Project(ctx context.Context, entityType, entityID string, handler es.Handler) (err error)
+	Project(ctx context.Context, streamType, streamID string, handler es.Handler) (err error)
 }
 
 type Hydrater[T es.Handler] struct {
 	projector  Projector
-	entityType string
+	streamType string
 	cfg        *Config[T]
 }
 
-func New[T es.Handler](projector Projector, entityType string, opts ...Option[T]) *Hydrater[T] {
+func New[T es.Handler](projector Projector, streamType string, opts ...Option[T]) *Hydrater[T] {
 	return &Hydrater[T]{
 		projector:  projector,
-		entityType: entityType,
+		streamType: streamType,
 		cfg: applyOptions(
 			defaultOptions[T](),
 			opts...,
@@ -51,7 +51,7 @@ func (r *Hydrater[T]) Hydrate(ctx context.Context, id string) (T, error) {
 				return
 			}
 
-			err = r.projector.Project(ctx, r.entityType, id, state)
+			err = r.projector.Project(ctx, r.streamType, id, state)
 			if err != nil {
 				errChan <- err
 				return
