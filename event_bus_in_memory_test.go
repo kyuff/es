@@ -16,20 +16,20 @@ import (
 func TestInMemoryEventBus(t *testing.T) {
 	var (
 		ctx             = context.Background()
-		newEntityType   = uuid.V7
+		newStreamType   = uuid.V7
 		newSubscriberID = uuid.V7
 		newHandler      = func() es.HandlerFunc {
 			return func(ctx context.Context, event es.Event) error {
 				return nil
 			}
 		}
-		newEvent = func(entityType string, eventNumber int) es.Event {
-			return es.Event{EventNumber: int64(eventNumber), StreamType: entityType}
+		newEvent = func(streamType string, eventNumber int) es.Event {
+			return es.Event{EventNumber: int64(eventNumber), StreamType: streamType}
 		}
-		newEventList = func(entityType string, count int) []es.Event {
+		newEventList = func(streamType string, count int) []es.Event {
 			var events []es.Event
 			for i := 1; i <= count; i++ {
-				events = append(events, newEvent(entityType, i))
+				events = append(events, newEvent(streamType, i))
 			}
 			return events
 		}
@@ -58,13 +58,13 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				handler      = newHandler()
 			)
 
 			// act
-			err := sut.Subscribe(ctx, entityType, subscriberID, handler)
+			err := sut.Subscribe(ctx, streamType, subscriberID, handler)
 
 			// assert
 			assert.NoError(t, err)
@@ -74,15 +74,15 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				handler      = newHandler()
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
-			err := sut.Subscribe(ctx, entityType, subscriberID, handler)
+			err := sut.Subscribe(ctx, streamType, subscriberID, handler)
 
 			// assert
 			assert.Error(t, err)
@@ -92,7 +92,7 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut           = es.NewInMemoryEventBus()
-				entityType    = newEntityType()
+				streamType    = newStreamType()
 				subscriberIDs = []string{
 					newSubscriberID(),
 					newSubscriberID(),
@@ -103,11 +103,11 @@ func TestInMemoryEventBus(t *testing.T) {
 			slices.Sort(subscriberIDs)
 
 			for _, subscriberID := range subscriberIDs {
-				assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, newHandler()))
+				assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, newHandler()))
 			}
 
 			// act
-			got, err := sut.GetSubscriberIDs(ctx, entityType)
+			got, err := sut.GetSubscriberIDs(ctx, streamType)
 
 			// assert
 			assert.NoError(t, err)
@@ -121,17 +121,17 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				got          []es.Event
 				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 					got = append(got, event)
 					return nil
 				})
-				events = newEventList(entityType, 3)
+				events = newEventList(streamType, 3)
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
 			err := sut.Write(ctx, "other", seqs.Seq2(events...))
@@ -145,20 +145,20 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				got          []es.Event
 				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 					got = append(got, event)
 					return nil
 				})
-				events = newEventList(entityType, 3)
+				events = newEventList(streamType, 3)
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
-			err := sut.Write(ctx, entityType, seqs.Seq2(events...))
+			err := sut.Write(ctx, streamType, seqs.Seq2(events...))
 
 			// assert
 			assert.NoError(t, err)
@@ -169,7 +169,7 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				got          []es.Event
 				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
@@ -179,13 +179,13 @@ func TestInMemoryEventBus(t *testing.T) {
 					}
 					return nil
 				})
-				events = newEventList(entityType, 5)
+				events = newEventList(streamType, 5)
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
-			err := sut.Write(ctx, entityType, seqs.Seq2(events...))
+			err := sut.Write(ctx, streamType, seqs.Seq2(events...))
 
 			// assert
 			assert.Error(t, err)
@@ -196,7 +196,7 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut        = es.NewInMemoryEventBus()
-				entityType = newEntityType()
+				streamType = newStreamType()
 				got        []es.Event
 				ch         = make(chan es.Event, 9)
 				handlers   = map[string]es.Handler{
@@ -204,15 +204,15 @@ func TestInMemoryEventBus(t *testing.T) {
 					newSubscriberID(): newChanHandler(ch),
 					newSubscriberID(): newChanHandler(ch),
 				}
-				events = newEventList(entityType, 3)
+				events = newEventList(streamType, 3)
 			)
 
 			for subscriberID, handler := range handlers {
-				assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+				assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 			}
 
 			// act
-			err := sut.Write(ctx, entityType, seqs.Seq2(events...))
+			err := sut.Write(ctx, streamType, seqs.Seq2(events...))
 
 			// assert
 			close(ch)
@@ -231,7 +231,7 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				got          []es.Event
 				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
@@ -243,10 +243,10 @@ func TestInMemoryEventBus(t *testing.T) {
 				})
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
-			err := sut.Write(ctx, entityType, events)
+			err := sut.Write(ctx, streamType, events)
 
 			// assert
 			assert.Error(t, err)
@@ -259,17 +259,17 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				got          []es.Event
 				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 					got = append(got, event)
 					return nil
 				})
-				events = newEventList(entityType, 3)
+				events = newEventList(streamType, 3)
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
 			err := sut.WriteTo(ctx, "other", seqs.Seq2(events...), subscriberID)
@@ -283,20 +283,20 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				got          []es.Event
 				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 					got = append(got, event)
 					return nil
 				})
-				events = newEventList(entityType, 3)
+				events = newEventList(streamType, 3)
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
-			err := sut.WriteTo(ctx, entityType, seqs.Seq2(events...), subscriberID)
+			err := sut.WriteTo(ctx, streamType, seqs.Seq2(events...), subscriberID)
 
 			// assert
 			assert.NoError(t, err)
@@ -307,20 +307,20 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				got          []es.Event
 				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 					got = append(got, event)
 					return errors.New("FAIL")
 				})
-				events = newEventList(entityType, 3)
+				events = newEventList(streamType, 3)
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
-			err := sut.WriteTo(ctx, entityType, seqs.Seq2(events...), subscriberID)
+			err := sut.WriteTo(ctx, streamType, seqs.Seq2(events...), subscriberID)
 
 			// assert
 			assert.Error(t, err)
@@ -331,7 +331,7 @@ func TestInMemoryEventBus(t *testing.T) {
 			// arrange
 			var (
 				sut          = es.NewInMemoryEventBus()
-				entityType   = newEntityType()
+				streamType   = newStreamType()
 				subscriberID = newSubscriberID()
 				got          []es.Event
 				handler      = es.HandlerFunc(func(ctx context.Context, event es.Event) error {
@@ -343,10 +343,10 @@ func TestInMemoryEventBus(t *testing.T) {
 				})
 			)
 
-			assert.NoError(t, sut.Subscribe(ctx, entityType, subscriberID, handler))
+			assert.NoError(t, sut.Subscribe(ctx, streamType, subscriberID, handler))
 
 			// act
-			err := sut.WriteTo(ctx, entityType, events, subscriberID)
+			err := sut.WriteTo(ctx, streamType, events, subscriberID)
 
 			// assert
 			assert.Error(t, err)
