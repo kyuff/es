@@ -40,7 +40,7 @@ type WriterMock struct {
 		Write []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// EntityType is the entityType argument value.
+			// StreamType is the entityType argument value.
 			EntityType string
 			// Events is the events argument value.
 			Events iter.Seq2[es.Event, error]

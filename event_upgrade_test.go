@@ -17,8 +17,8 @@ func Test_EventUpgrades(t *testing.T) {
 		newEntityID   = uuid.V7
 		newEvent      = func(id, typ string, mods ...func(e *Event)) Event {
 			e := Event{
-				EntityID:     id,
-				EntityType:   typ,
+				StreamID:     id,
+				StreamType:   typ,
 				EventNumber:  1,
 				StoreEventID: uuid.V7(),
 			}

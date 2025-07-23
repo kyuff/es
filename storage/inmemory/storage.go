@@ -76,8 +76,8 @@ func (s *Storage) Write(ctx context.Context, entityType string, events iter.Seq2
 
 func (s *Storage) writeEvent(ctx context.Context, event es.Event) error {
 	key := indexKey{
-		EntityType:  event.EntityType,
-		EntityID:    event.EntityID,
+		EntityType:  event.StreamType,
+		EntityID:    event.StreamID,
 		EventNumber: event.EventNumber,
 	}
 	s.tablesMux.Lock()
@@ -94,8 +94,8 @@ func (s *Storage) writeEvent(ctx context.Context, event es.Event) error {
 	}
 
 	_, isNext := s.uniqueIndex[indexKey{
-		EntityType:  event.EntityType,
-		EntityID:    event.EntityID,
+		EntityType:  event.StreamType,
+		EntityID:    event.StreamID,
 		EventNumber: event.EventNumber - 1,
 	}]
 	if !isNext && event.EventNumber > 1 {
@@ -155,7 +155,7 @@ func (s *Storage) StartPublish(ctx context.Context, writer es.Writer) error {
 		case <-ctx.Done():
 			return nil
 		case event := <-s.outbox:
-			err := writer.Write(ctx, event.EntityType, func(yield func(es.Event, error) bool) {
+			err := writer.Write(ctx, event.StreamType, func(yield func(es.Event, error) bool) {
 				_ = yield(event, nil)
 			})
 			if err != nil {

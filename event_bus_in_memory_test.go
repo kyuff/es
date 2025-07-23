@@ -24,7 +24,7 @@ func TestInMemoryEventBus(t *testing.T) {
 			}
 		}
 		newEvent = func(entityType string, eventNumber int) es.Event {
-			return es.Event{EventNumber: int64(eventNumber), EntityType: entityType}
+			return es.Event{EventNumber: int64(eventNumber), StreamType: entityType}
 		}
 		newEventList = func(entityType string, count int) []es.Event {
 			var events []es.Event

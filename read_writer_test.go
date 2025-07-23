@@ -15,8 +15,8 @@ func TestReadWriter(t *testing.T) {
 			sut Reader = readerFunc(func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[Event, error] {
 				return seqs.Seq2(
 					Event{
-						EntityType:  entityType,
-						EntityID:    entityID,
+						StreamType:  entityType,
+						StreamID:    entityID,
 						EventNumber: eventNumber,
 					},
 				)
@@ -29,8 +29,8 @@ func TestReadWriter(t *testing.T) {
 		// assert
 		for event, err := range got {
 			assert.NoError(t, err)
-			assert.Equal(t, "entityType", event.EntityType)
-			assert.Equal(t, "entityID", event.EntityID)
+			assert.Equal(t, "entityType", event.StreamType)
+			assert.Equal(t, "entityID", event.StreamID)
 			assert.Equal(t, 42, event.EventNumber)
 		}
 	})
@@ -46,8 +46,8 @@ func TestReadWriter(t *testing.T) {
 				return nil
 			})
 			event = Event{
-				EntityType:  "entityType",
-				EntityID:    "entityID",
+				StreamType:  "entityType",
+				StreamID:    "entityID",
 				EventNumber: 42,
 			}
 		)

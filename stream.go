@@ -87,13 +87,13 @@ func (s *stream) Write(eventContents ...Content) error {
 		for i, content := range eventContents {
 			eventNumber = eventNumber + 1
 			event := Event{
-				EntityID:      s.entityID,
-				EntityType:    s.entityType,
+				StreamID:      s.entityID,
+				StreamType:    s.entityType,
 				EventNumber:   eventNumber,
 				EventTime:     eventTime,
 				Content:       content,
 				StoreEventID:  eventIDs[i],
-				StoreEntityID: s.storeEntityID,
+				StoreStreamID: s.storeEntityID,
 			}
 			if !yield(event, nil) {
 				return
@@ -120,7 +120,7 @@ func (s *stream) All() iter.Seq2[Event, error] {
 				}
 
 				s.position = event.EventNumber
-				s.storeEntityID = event.StoreEntityID
+				s.storeEntityID = event.StoreStreamID
 				if !yield(event, nil) {
 					return
 				}

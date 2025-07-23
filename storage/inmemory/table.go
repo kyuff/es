@@ -33,11 +33,11 @@ func newData(event es.Event, c *codecs.JSON) (tableRow, error) {
 	}
 
 	return tableRow{
-		EntityID:      event.EntityID,
-		EntityType:    event.EntityType,
+		EntityID:      event.StreamID,
+		EntityType:    event.StreamType,
 		EventNumber:   event.EventNumber,
 		StoreEventID:  event.StoreEventID,
-		StoreEntityID: event.StoreEntityID,
+		StoreEntityID: event.StoreStreamID,
 		EventTime:     event.EventTime.Format(time.RFC3339),
 		Content:       eventData,
 		ContentName:   event.Content.EventName(),
@@ -56,12 +56,12 @@ func (row tableRow) Event(c *codecs.JSON) (es.Event, error) {
 	}
 
 	return es.Event{
-		EntityID:      row.EntityID,
-		EntityType:    row.EntityType,
+		StreamID:      row.EntityID,
+		StreamType:    row.EntityType,
 		EventNumber:   row.EventNumber,
 		EventTime:     eventTime,
 		Content:       eventData,
 		StoreEventID:  row.StoreEventID,
-		StoreEntityID: row.StoreEntityID,
+		StoreStreamID: row.StoreEntityID,
 	}, nil
 }

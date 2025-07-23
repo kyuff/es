@@ -5,7 +5,7 @@ import (
 	"iter"
 )
 
-// Reader allows getting a sequence of Events for an EntityType and EntityID
+// Reader allows getting a sequence of Events for an StreamType and StreamID
 type Reader interface {
 	Read(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[Event, error]
 }

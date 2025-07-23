@@ -25,13 +25,13 @@ func HydrateState[T Handler](t *testing.T, state T, contents ...Content) T {
 
 	for i, content := range contents {
 		err := state.Handle(t.Context(), Event{
-			EntityID:      entityID,
-			EntityType:    entityType,
+			StreamID:      entityID,
+			StreamType:    entityType,
 			EventNumber:   int64(i + 1),
 			EventTime:     time.Now(),
 			Content:       content,
 			StoreEventID:  storeEventIDs[i],
-			StoreEntityID: storeEntityID,
+			StoreStreamID: storeEntityID,
 		})
 		assert.NoError(t, err)
 	}

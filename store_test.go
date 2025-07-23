@@ -21,11 +21,11 @@ func TestStore(t *testing.T) {
 		newSubscriberID = uuid.V7
 		newEvent        = func(id, typ string, mods ...func(e *es.Event)) es.Event {
 			e := es.Event{
-				EntityID:      id,
-				EntityType:    typ,
+				StreamID:      id,
+				StreamType:    typ,
 				EventNumber:   1,
 				StoreEventID:  uuid.V7(),
-				StoreEntityID: id + "-" + typ,
+				StoreStreamID: id + "-" + typ,
 				Content:       EventMock{ID: rand.IntN(124)},
 			}
 			for _, mod := range mods {

@@ -30,8 +30,8 @@ func TestStorage(t *testing.T) {
 		ctx      = context.Background()
 		newEvent = func(eventNumber int64, mods ...func(e *es.Event)) es.Event {
 			e := es.Event{
-				EntityID:     fmt.Sprintf("EntityID-%d", eventNumber),
-				EntityType:   fmt.Sprintf("EntityType-%d", eventNumber),
+				StreamID:     fmt.Sprintf("StreamID-%d", eventNumber),
+				StreamType:   fmt.Sprintf("StreamType-%d", eventNumber),
 				EventNumber:  eventNumber,
 				StoreEventID: fmt.Sprintf("StoreEventID-%d", eventNumber),
 				EventTime:    time.Now().Add(time.Second * time.Duration(eventNumber)).Truncate(time.Second),
@@ -44,17 +44,17 @@ func TestStorage(t *testing.T) {
 			return e
 		}
 		newEntityType = func() string {
-			return fmt.Sprintf("EntityType-%d", rand.Int63())
+			return fmt.Sprintf("StreamType-%d", rand.Int63())
 		}
 		newEvents = func(entityType string, count int) []es.Event {
-			var entityID = fmt.Sprintf("EntityID-%d-%d", count, rand.Int63())
+			var entityID = fmt.Sprintf("StreamID-%d-%d", count, rand.Int63())
 			var events []es.Event
 			var storeEntityIDs = uuid.V7At(time.Now(), count)
 			for i := 1; i <= count; i++ {
 				events = append(events, newEvent(int64(i), func(e *es.Event) {
-					e.EntityType = entityType
-					e.EntityID = entityID
-					e.StoreEntityID = storeEntityIDs[i-1]
+					e.StreamType = entityType
+					e.StreamID = entityID
+					e.StoreStreamID = storeEntityIDs[i-1]
 				}))
 			}
 
@@ -104,19 +104,19 @@ func TestStorage(t *testing.T) {
 			sut        = inmemory.New()
 		)
 
-		assert.NoError(t, sut.Register(events[0].EntityType, MockEvent{}))
+		assert.NoError(t, sut.Register(events[0].StreamType, MockEvent{}))
 		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
 
 		// act
-		i := sut.Read(ctx, events[0].EntityType, events[0].EntityID, 0)
+		i := sut.Read(ctx, events[0].StreamType, events[0].StreamID, 0)
 
 		// assert
 		got := collectEvents(t, i)
 		assert.EqualSliceFunc(t, events, got, func(want, item es.Event) bool {
 			return assert.Equal(t, want.Content, item.Content) &&
 				assert.Equal(t, want.EventNumber, item.EventNumber) &&
-				assert.Equal(t, want.EntityType, item.EntityType) &&
-				assert.Equal(t, want.EntityID, item.EntityID) &&
+				assert.Equal(t, want.StreamType, item.StreamType) &&
+				assert.Equal(t, want.StreamID, item.StreamID) &&
 				assert.Equal(t, want.StoreEventID, item.StoreEventID) &&
 				assert.EqualTime(t, want.EventTime, item.EventTime)
 		})
@@ -136,7 +136,7 @@ func TestStorage(t *testing.T) {
 		)
 
 		wg.Add(len(events))
-		assert.NoError(t, sut.Register(events[0].EntityType, MockEvent{}))
+		assert.NoError(t, sut.Register(events[0].StreamType, MockEvent{}))
 
 		writer.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
 			got = seqs.Concat2(got, events)
@@ -169,12 +169,12 @@ func TestStorage(t *testing.T) {
 			entityType  = "entityType"
 			entityID    = "entityID"
 			eventA      = newEvent(1, func(e *es.Event) {
-				e.EntityType = entityType
-				e.EntityID = entityID
+				e.StreamType = entityType
+				e.StreamID = entityID
 			})
 			eventB = newEvent(1, func(e *es.Event) {
-				e.EntityType = entityType
-				e.EntityID = entityID
+				e.StreamType = entityType
+				e.StreamID = entityID
 			})
 			writer = &WriterMock{}
 			sut    = inmemory.New()
@@ -207,12 +207,12 @@ func TestStorage(t *testing.T) {
 			entityType = "entityType"
 			entityID   = "entityID"
 			eventA     = newEvent(1, func(e *es.Event) {
-				e.EntityType = entityType
-				e.EntityID = entityID
+				e.StreamType = entityType
+				e.StreamID = entityID
 			})
 			eventB = newEvent(3, func(e *es.Event) {
-				e.EntityType = entityType
-				e.EntityID = entityID
+				e.StreamType = entityType
+				e.StreamID = entityID
 			})
 			writer = &WriterMock{}
 			sut    = inmemory.New()
@@ -253,10 +253,10 @@ func TestStorage(t *testing.T) {
 		assert.NoError(t, err)
 		var ids []string
 		for _, event := range events {
-			ids = append(ids, event.EntityID)
+			ids = append(ids, event.StreamID)
 		}
 		if assert.EqualSlice(t, ids, got) {
-			assert.Truef(t, events[len(events)-1].StoreEntityID == pageToken, "got page token %v", got)
+			assert.Truef(t, events[len(events)-1].StoreStreamID == pageToken, "got page token %v", got)
 		}
 	})
 
