@@ -2,6 +2,7 @@ package es
 
 import (
 	"context"
+	"errors"
 	"iter"
 	"testing"
 
@@ -39,6 +40,99 @@ func Test_EventUpgrades(t *testing.T) {
 			return events
 		}
 	)
+	t.Run("upgradeReader", func(t *testing.T) {
+		t.Run("should upgrade events", func(t *testing.T) {
+			// arrange
+			var (
+				streamType = newStreamType()
+				events     = newEvents(5, streamType)
+				rd         = readerFunc(func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[Event, error] {
+					return seqs.Seq2(events...)
+				})
+				calls    []int
+				upgrades = []EventUpgrade{
+					EventUpgradeFunc(func(ctx context.Context, i iter.Seq2[Event, error]) iter.Seq2[Event, error] {
+						calls = append(calls, 1)
+						return i
+					}),
+					EventUpgradeFunc(func(ctx context.Context, i iter.Seq2[Event, error]) iter.Seq2[Event, error] {
+						calls = append(calls, 2)
+						return i
+					}),
+					EventUpgradeFunc(func(ctx context.Context, i iter.Seq2[Event, error]) iter.Seq2[Event, error] {
+						calls = append(calls, 3)
+						return i
+					}),
+				}
+				sut = newUpgradeReader(rd, upgrades)
+			)
+
+			// act
+			_ = sut.Read(ctx, streamType, "", 0)
+
+			// assert
+			assert.EqualSlice(t, []int{1, 2, 3}, calls)
+		})
+
+		t.Run("should be able to stop stream", func(t *testing.T) {
+			// arrange
+			var (
+				streamType = newStreamType()
+				events     = newEvents(5, streamType)
+				rd         = readerFunc(func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[Event, error] {
+					return seqs.Seq2(events...)
+				})
+				upgrades = []EventUpgrade{
+					EventUpgradeFunc(func(ctx context.Context, i iter.Seq2[Event, error]) iter.Seq2[Event, error] {
+						return i
+					}),
+				}
+				sut = newUpgradeReader(rd, upgrades)
+				got []Event
+			)
+
+			// act
+			for event, _ := range sut.Read(ctx, streamType, "", 0) {
+				got = append(got, event)
+				if event.EventNumber > 2 {
+					break
+				}
+			}
+
+			// assert
+			assert.EqualSlice(t, events[0:3], got)
+		})
+
+		t.Run("should stop stream on error", func(t *testing.T) {
+			// arrange
+			var (
+				streamType = newStreamType()
+				events     = newEvents(5, streamType)
+				rd         = readerFunc(func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[Event, error] {
+					return seqs.Concat2(
+						seqs.Seq2(events...),
+						seqs.Error2[Event](errors.New("TEST")),
+					)
+				})
+				upgrades = []EventUpgrade{
+					EventUpgradeFunc(func(ctx context.Context, i iter.Seq2[Event, error]) iter.Seq2[Event, error] {
+						return i
+					}),
+				}
+				sut = newUpgradeReader(rd, upgrades)
+				got []Event
+			)
+
+			// act
+			for event, _ := range sut.Read(ctx, streamType, "", 0) {
+				got = append(got, event)
+			}
+
+			// assert
+			assert.EqualSlice(t, events, got)
+		})
+	})
+
 	t.Run("upgradeWriter", func(t *testing.T) {
 		t.Run("should upgrade events", func(t *testing.T) {
 			// arrange
