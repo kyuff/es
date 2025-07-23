@@ -35,18 +35,18 @@ type Storage struct {
 	handlers    []es.Handler
 }
 
-func (s *Storage) GetEntityIDs(ctx context.Context, entityType string, storeEntityID string, limit int64) ([]string, string, error) {
+func (s *Storage) GetStreamIDs(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error) {
 	s.tablesMux.RLock()
 	defer s.tablesMux.RUnlock()
 
 	var ids []string
 	var token = ""
 	for _, row := range s.table {
-		if entityType != row.EntityType {
+		if streamType != row.EntityType {
 			continue
 		}
 
-		if storeEntityID <= row.StoreEntityID {
+		if storeStreamID <= row.StoreEntityID {
 			ids = append(ids, row.EntityID)
 			token = row.StoreEntityID
 		}
@@ -59,7 +59,7 @@ func (s *Storage) GetEntityIDs(ctx context.Context, entityType string, storeEnti
 	return ids, token, nil
 }
 
-func (s *Storage) Write(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+func (s *Storage) Write(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 	for event, err := range events {
 		if err != nil {
 			return err
@@ -111,14 +111,14 @@ func (s *Storage) writeEvent(ctx context.Context, event es.Event) error {
 	return nil
 }
 
-func (s *Storage) Read(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+func (s *Storage) Read(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 	return func(yield func(es.Event, error) bool) {
 		s.tablesMux.RLock()
 		defer s.tablesMux.RUnlock()
 
 		key := indexKey{
-			EntityType:  entityType,
-			EntityID:    entityID,
+			EntityType:  streamType,
+			EntityID:    streamID,
 			EventNumber: eventNumber + 1,
 		}
 

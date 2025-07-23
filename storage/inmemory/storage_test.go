@@ -247,7 +247,7 @@ func TestStorage(t *testing.T) {
 		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
 
 		// act
-		got, pageToken, err := sut.GetEntityIDs(t.Context(), entityType, "", 10)
+		got, pageToken, err := sut.GetStreamIDs(t.Context(), entityType, "", 10)
 
 		// assert
 		assert.NoError(t, err)
@@ -276,7 +276,7 @@ func TestStorage(t *testing.T) {
 		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
 
 		// act
-		got, _, err := sut.GetEntityIDs(t.Context(), entityType, "", 5)
+		got, _, err := sut.GetStreamIDs(t.Context(), entityType, "", 5)
 
 		// assert
 		assert.NoError(t, err)
@@ -300,7 +300,7 @@ func TestStorage(t *testing.T) {
 		assert.NoError(t, sut.Write(ctx, entityType, seqs.Seq2(events...)))
 
 		// act
-		got, _, err := sut.GetEntityIDs(t.Context(), entityType, "", 5)
+		got, _, err := sut.GetStreamIDs(t.Context(), entityType, "", 5)
 
 		// assert
 		assert.NoError(t, err)
