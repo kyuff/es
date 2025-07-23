@@ -1,6 +1,6 @@
 package codecs
 
 type contentKey struct {
-	entityType  string
+	streamType  string
 	contentName string
 }

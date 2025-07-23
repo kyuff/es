@@ -36,11 +36,11 @@ func TestJSON(t *testing.T) {
 		// arrange
 		var (
 			sut        = codecs.NewJSON()
-			entityType = uuid.V7()
+			streamType = uuid.V7()
 		)
 
 		// act
-		_, err := sut.Decode(entityType, "EventMock", []byte(`{ ... not json`))
+		_, err := sut.Decode(streamType, "EventMock", []byte(`{ ... not json`))
 
 		// assert
 		assert.Error(t, err)
@@ -50,11 +50,11 @@ func TestJSON(t *testing.T) {
 		// arrange
 		var (
 			sut        = codecs.NewJSON()
-			entityType = uuid.V7()
+			streamType = uuid.V7()
 			in         = EventMock{ID: rand.Int()}
 		)
 
-		assert.NoError(t, sut.Register(entityType, EventMock{}))
+		assert.NoError(t, sut.Register(streamType, EventMock{}))
 
 		// act
 		b, err := sut.Encode(es.Event{Content: in})
@@ -63,7 +63,7 @@ func TestJSON(t *testing.T) {
 		assert.NoError(t, err)
 
 		// act
-		got, err := sut.Decode(entityType, "EventMock", b)
+		got, err := sut.Decode(streamType, "EventMock", b)
 
 		// assert
 		assert.NoError(t, err)
