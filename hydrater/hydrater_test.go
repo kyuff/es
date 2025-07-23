@@ -23,7 +23,7 @@ func (mockState) Handle(ctx context.Context, event es.Event) error {
 
 func TestGetter(t *testing.T) {
 	var (
-		testType   = "testEntity"
+		testType   = "testStream"
 		newID      = uuid.V7
 		maxChecker = func(maxChecks int) func(state *mockState) bool {
 			checks := 0
@@ -47,9 +47,9 @@ func TestGetter(t *testing.T) {
 			expected  = newID()
 		)
 
-		projector.ProjectFunc = func(ctx context.Context, entityType, entityID string, handler es.Handler) error {
-			assert.Equalf(t, testType, entityType, "entity type should match")
-			assert.Equalf(t, id, entityID, "entity ID should match")
+		projector.ProjectFunc = func(ctx context.Context, streamType, streamID string, handler es.Handler) error {
+			assert.Equalf(t, testType, streamType, "stream type should match")
+			assert.Equalf(t, id, streamID, "stream ID should match")
 			state, isType := handler.(*mockState)
 			if assert.Truef(t, isType, "handler should match") {
 				state.value = expected
@@ -85,7 +85,7 @@ func TestGetter(t *testing.T) {
 			id = newID()
 		)
 
-		projector.ProjectFunc = func(ctx context.Context, entityType, entityID string, handler es.Handler) error {
+		projector.ProjectFunc = func(ctx context.Context, streamType, streamID string, handler es.Handler) error {
 			return errors.New("FAIL")
 		}
 
@@ -116,7 +116,7 @@ func TestGetter(t *testing.T) {
 			id = newID()
 		)
 
-		projector.ProjectFunc = func(ctx context.Context, entityType, entityID string, handler es.Handler) error {
+		projector.ProjectFunc = func(ctx context.Context, streamType, streamID string, handler es.Handler) error {
 			return nil
 		}
 
@@ -144,7 +144,7 @@ func TestGetter(t *testing.T) {
 			id = newID()
 		)
 
-		projector.ProjectFunc = func(ctx context.Context, entityType, entityID string, handler es.Handler) error {
+		projector.ProjectFunc = func(ctx context.Context, streamType, streamID string, handler es.Handler) error {
 			return nil
 		}
 
@@ -172,7 +172,7 @@ func TestGetter(t *testing.T) {
 			id = newID()
 		)
 
-		projector.ProjectFunc = func(ctx context.Context, entityType, entityID string, handler es.Handler) error {
+		projector.ProjectFunc = func(ctx context.Context, streamType, streamID string, handler es.Handler) error {
 			return nil
 		}
 
@@ -200,7 +200,7 @@ func TestGetter(t *testing.T) {
 			id = newID()
 		)
 
-		projector.ProjectFunc = func(ctx context.Context, entityType, entityID string, handler es.Handler) error {
+		projector.ProjectFunc = func(ctx context.Context, streamType, streamID string, handler es.Handler) error {
 			return nil
 		}
 
@@ -232,7 +232,7 @@ func TestGetter(t *testing.T) {
 			id = newID()
 		)
 
-		projector.ProjectFunc = func(ctx context.Context, entityType, entityID string, handler es.Handler) error {
+		projector.ProjectFunc = func(ctx context.Context, streamType, streamID string, handler es.Handler) error {
 			return nil
 		}
 
