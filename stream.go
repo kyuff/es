@@ -10,7 +10,7 @@ import (
 	"github.com/kyuff/es/internal/uuid"
 )
 
-// Stream is a sequence of Events that in combination represent the state of an entity.
+// Stream is a sequence of Events that in combination represent the state of a business entity.
 // The Stream can be written and read from, which enables applications to alter and get the state.
 type Stream interface {
 	// Project iterates over all events in the stream and calls the handler for each event.
