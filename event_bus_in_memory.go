@@ -26,15 +26,15 @@ type InMemoryEventBus struct {
 	subMap  map[string]map[string]subscriber
 }
 
-func (bus *InMemoryEventBus) GetSubscriberIDs(ctx context.Context, entityType string) ([]string, error) {
+func (bus *InMemoryEventBus) GetSubscriberIDs(ctx context.Context, streamType string) ([]string, error) {
 	bus.mux.RLock()
 	defer bus.mux.RUnlock()
 
-	return slices.Collect(maps.Keys(bus.subMap[entityType])), nil
+	return slices.Collect(maps.Keys(bus.subMap[streamType])), nil
 }
 
-func (bus *InMemoryEventBus) Write(ctx context.Context, entityType string, events iter.Seq2[Event, error]) error {
-	subs := bus.subList[entityType]
+func (bus *InMemoryEventBus) Write(ctx context.Context, streamType string, events iter.Seq2[Event, error]) error {
+	subs := bus.subList[streamType]
 	if len(subs) == 0 {
 		return nil
 	}
@@ -44,7 +44,7 @@ func (bus *InMemoryEventBus) Write(ctx context.Context, entityType string, event
 			return err
 		}
 
-		err := bus.publish(ctx, entityType, event, subs)
+		err := bus.publish(ctx, streamType, event, subs)
 		if err != nil {
 			return err
 		}
@@ -53,17 +53,17 @@ func (bus *InMemoryEventBus) Write(ctx context.Context, entityType string, event
 	return nil
 }
 
-func (bus *InMemoryEventBus) WriteTo(ctx context.Context, entityType string, events iter.Seq2[Event, error], subscribers ...string) error {
+func (bus *InMemoryEventBus) WriteTo(ctx context.Context, streamType string, events iter.Seq2[Event, error], subscribers ...string) error {
 	bus.mux.RLock()
 	defer bus.mux.RUnlock()
 
 	var subs []subscriber
-	if len(bus.subMap[entityType]) == 0 {
+	if len(bus.subMap[streamType]) == 0 {
 		return nil
 	}
 
 	for _, id := range subscribers {
-		if sub, ok := bus.subMap[entityType][id]; ok {
+		if sub, ok := bus.subMap[streamType][id]; ok {
 			subs = append(subs, sub)
 		}
 	}
@@ -73,7 +73,7 @@ func (bus *InMemoryEventBus) WriteTo(ctx context.Context, entityType string, eve
 			return err
 		}
 
-		err := bus.publish(ctx, entityType, event, subs)
+		err := bus.publish(ctx, streamType, event, subs)
 		if err != nil {
 			return err
 		}
@@ -82,7 +82,7 @@ func (bus *InMemoryEventBus) WriteTo(ctx context.Context, entityType string, eve
 	return nil
 }
 
-func (bus *InMemoryEventBus) publish(ctx context.Context, entityType string, event Event, subs []subscriber) error {
+func (bus *InMemoryEventBus) publish(ctx context.Context, streamType string, event Event, subs []subscriber) error {
 	bus.mux.RLock()
 	defer bus.mux.RUnlock()
 
@@ -97,7 +97,7 @@ func (bus *InMemoryEventBus) publish(ctx context.Context, entityType string, eve
 	return g.Wait()
 }
 
-func (bus *InMemoryEventBus) Subscribe(ctx context.Context, entityType, subscriberID string, handler Handler) error {
+func (bus *InMemoryEventBus) Subscribe(ctx context.Context, streamType, subscriberID string, handler Handler) error {
 	bus.mux.Lock()
 	defer bus.mux.Unlock()
 
@@ -105,16 +105,16 @@ func (bus *InMemoryEventBus) Subscribe(ctx context.Context, entityType, subscrib
 		id:      subscriberID,
 		handler: handler,
 	}
-	if _, ok := bus.subMap[entityType]; !ok {
-		bus.subMap[entityType] = make(map[string]subscriber)
+	if _, ok := bus.subMap[streamType]; !ok {
+		bus.subMap[streamType] = make(map[string]subscriber)
 	}
 
-	if _, ok := bus.subMap[entityType][subscriberID]; ok {
-		return fmt.Errorf("subscriber already exists: %s.%s", entityType, sub.ID())
+	if _, ok := bus.subMap[streamType][subscriberID]; ok {
+		return fmt.Errorf("subscriber already exists: %s.%s", streamType, sub.ID())
 	}
 
-	bus.subMap[entityType][subscriberID] = sub
-	bus.subList[entityType] = append(bus.subList[entityType], sub)
+	bus.subMap[streamType][subscriberID] = sub
+	bus.subList[streamType] = append(bus.subList[streamType], sub)
 
 	return nil
 }
