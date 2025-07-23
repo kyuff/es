@@ -8,10 +8,10 @@ import (
 
 type Option func(*Config)
 
-func WithEvents(entityType string, contentTypes []Content) Option {
+func WithEvents(streamType string, contentTypes []Content) Option {
 	return func(o *Config) {
 		for _, contentType := range contentTypes {
-			o.contentTypes[entityType] = append(o.contentTypes[entityType], contentType)
+			o.contentTypes[streamType] = append(o.contentTypes[streamType], contentType)
 		}
 	}
 }
@@ -41,8 +41,8 @@ func WithEventBus(bus EventBus) Option {
 	}
 }
 
-func WithEventUpgrades(entityType string, upgrades ...EventUpgrade) Option {
+func WithEventUpgrades(streamType string, upgrades ...EventUpgrade) Option {
 	return func(o *Config) {
-		o.eventUpgrades[entityType] = append(o.eventUpgrades[entityType], upgrades...)
+		o.eventUpgrades[streamType] = append(o.eventUpgrades[streamType], upgrades...)
 	}
 }
