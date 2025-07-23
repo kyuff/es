@@ -39,9 +39,9 @@ type ProjectorMock struct {
 		Project []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// StreamType is the entityType argument value.
+			// EntityType is the entityType argument value.
 			EntityType string
-			// StreamID is the entityID argument value.
+			// EntityID is the entityID argument value.
 			EntityID string
 			// Handler is the handler argument value.
 			Handler es.Handler

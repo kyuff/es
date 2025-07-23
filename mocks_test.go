@@ -45,9 +45,9 @@ type ReadWriterMock struct {
 		Read []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// StreamType is the entityType argument value.
+			// EntityType is the entityType argument value.
 			EntityType string
-			// StreamID is the entityID argument value.
+			// EntityID is the entityID argument value.
 			EntityID string
 			// EventNumber is the eventNumber argument value.
 			EventNumber int64
@@ -56,7 +56,7 @@ type ReadWriterMock struct {
 		Write []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// StreamType is the entityType argument value.
+			// EntityType is the entityType argument value.
 			EntityType string
 			// Events is the events argument value.
 			Events iter.Seq2[es.Event, error]
@@ -203,9 +203,9 @@ type StorageMock struct {
 		GetEntityIDs []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// StreamType is the entityType argument value.
+			// EntityType is the entityType argument value.
 			EntityType string
-			// StoreStreamID is the storeEntityID argument value.
+			// StoreEntityID is the storeEntityID argument value.
 			StoreEntityID string
 			// Limit is the limit argument value.
 			Limit int64
@@ -214,16 +214,16 @@ type StorageMock struct {
 		Read []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// StreamType is the entityType argument value.
+			// EntityType is the entityType argument value.
 			EntityType string
-			// StreamID is the entityID argument value.
+			// EntityID is the entityID argument value.
 			EntityID string
 			// EventNumber is the eventNumber argument value.
 			EventNumber int64
 		}
 		// Register holds details about calls to the Register method.
 		Register []struct {
-			// StreamType is the entityType argument value.
+			// EntityType is the entityType argument value.
 			EntityType string
 			// Types is the types argument value.
 			Types []es.Content
@@ -239,7 +239,7 @@ type StorageMock struct {
 		Write []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// StreamType is the entityType argument value.
+			// EntityType is the entityType argument value.
 			EntityType string
 			// Events is the events argument value.
 			Events iter.Seq2[es.Event, error]
