@@ -33,11 +33,11 @@ func TestEqualEvent(t *testing.T) {
 		var (
 			x        = &testing.T{}
 			expected = es.Event{
-				EntityID:    "an entity id",
+				StreamID:    "a stream id",
 				EventNumber: 42,
 			}
 			actual = es.Event{
-				EntityID:    "different id",
+				StreamID:    "different id",
 				EventNumber: 42,
 			}
 		)

@@ -16,16 +16,16 @@ import (
 func TestStore(t *testing.T) {
 	var (
 		ctx             = context.Background()
-		newEntityType   = uuid.V7
-		newEntityID     = uuid.V7
+		newStreamType   = uuid.V7
+		newStreamID     = uuid.V7
 		newSubscriberID = uuid.V7
 		newEvent        = func(id, typ string, mods ...func(e *es.Event)) es.Event {
 			e := es.Event{
-				EntityID:      id,
-				EntityType:    typ,
+				StreamID:      id,
+				StreamType:    typ,
 				EventNumber:   1,
 				StoreEventID:  uuid.V7(),
-				StoreEntityID: id + "-" + typ,
+				StoreStreamID: id + "-" + typ,
 				Content:       EventMock{ID: rand.IntN(124)},
 			}
 			for _, mod := range mods {
@@ -65,21 +65,21 @@ func TestStore(t *testing.T) {
 		t.Run("project all events in order", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				entityID   = newEntityID()
+				streamType = newStreamType()
+				streamID   = newStreamID()
 				storage    = &StorageMock{}
-				events     = newEvents(3, entityID, entityType)
-				store      = es.NewStore(storage, es.WithEvents(entityType, []es.Content{EventMock{}}))
+				events     = newEvents(3, streamID, streamType)
+				store      = es.NewStore(storage, es.WithEvents(streamType, []es.Content{EventMock{}}))
 
 				got []es.Event
 			)
 
-			storage.ReadFunc = func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+			storage.ReadFunc = func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 				return seqs.Seq2(events...)
 			}
 
 			// act
-			err := store.Project(ctx, entityType, entityID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+			err := store.Project(ctx, streamType, streamID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 				got = append(got, event)
 				return nil
 			}))
@@ -92,21 +92,21 @@ func TestStore(t *testing.T) {
 		t.Run("open storage at start", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				entityID   = newEntityID()
+				streamType = newStreamType()
+				streamID   = newStreamID()
 				storage    = &StorageMock{}
 				store      = es.NewStore(storage)
 
 				got int64 = -1
 			)
 
-			storage.ReadFunc = func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+			storage.ReadFunc = func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 				got = eventNumber
 				return func(yield func(es.Event, error) bool) {}
 			}
 
 			// act
-			_ = store.Open(ctx, entityType, entityID).Project(es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+			_ = store.Open(ctx, streamType, streamID).Project(es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 				return nil
 			}))
 
@@ -117,21 +117,21 @@ func TestStore(t *testing.T) {
 		t.Run("open from storage at event number", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				entityID   = newEntityID()
+				streamType = newStreamType()
+				streamID   = newStreamID()
 				storage    = &StorageMock{}
 				store      = es.NewStore(storage)
 
 				got int64 = -1
 			)
 
-			storage.ReadFunc = func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+			storage.ReadFunc = func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 				got = eventNumber
 				return func(yield func(es.Event, error) bool) {}
 			}
 
 			// act
-			_ = store.OpenFrom(ctx, entityType, entityID, 7).Project(es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+			_ = store.OpenFrom(ctx, streamType, streamID, 7).Project(es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 				return nil
 			}))
 
@@ -142,17 +142,17 @@ func TestStore(t *testing.T) {
 		t.Run("read once from the storage", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				entityID   = newEntityID()
+				streamType = newStreamType()
+				streamID   = newStreamID()
 				storage    = &StorageMock{}
-				events     = newEvents(3, entityID, entityType)
+				events     = newEvents(3, streamID, streamType)
 				store      = es.NewStore(storage)
-				stream     = store.Open(ctx, entityType, entityID)
+				stream     = store.Open(ctx, streamType, streamID)
 
 				got []es.Event
 			)
 
-			storage.ReadFunc = func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+			storage.ReadFunc = func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 				return seqs.Seq2(events...)
 			}
 
@@ -188,16 +188,16 @@ func TestStore(t *testing.T) {
 		t.Run("project all events in order", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				entityID   = newEntityID()
+				streamType = newStreamType()
+				streamID   = newStreamID()
 				storage    = &StorageMock{}
-				events     = newEvents(3, entityID, entityType)
+				events     = newEvents(3, streamID, streamType)
 				store      = es.NewStore(storage)
-				stream     = store.Open(ctx, entityType, entityID)
+				stream     = store.Open(ctx, streamType, streamID)
 				got        []es.Event
 			)
 
-			storage.ReadFunc = func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+			storage.ReadFunc = func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 				return seqs.Seq2(events...)
 			}
 
@@ -215,31 +215,31 @@ func TestStore(t *testing.T) {
 		t.Run("write at next event number", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				entityID   = newEntityID()
+				streamType = newStreamType()
+				streamID   = newStreamID()
 				storage    = &StorageMock{}
-				events     = seqs.Seq2(newEvents(3, entityID, entityType)...)
+				events     = seqs.Seq2(newEvents(3, streamID, streamType)...)
 				store      = es.NewStore(storage)
-				stream     = store.Open(ctx, entityType, entityID)
+				stream     = store.Open(ctx, streamType, streamID)
 
 				got      iter.Seq2[es.Event, error]
 				expected = seqs.Seq2(
-					newEvent(entityID, entityType, func(e *es.Event) {
+					newEvent(streamID, streamType, func(e *es.Event) {
 						e.Content = EventMock{ID: 123}
 						e.EventNumber = 4
 					}),
-					newEvent(entityID, entityType, func(e *es.Event) {
+					newEvent(streamID, streamType, func(e *es.Event) {
 						e.Content = EventMock{ID: 512}
 						e.EventNumber = 5
 					}),
 				)
 			)
 
-			storage.ReadFunc = func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+			storage.ReadFunc = func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 				return events
 			}
 
-			storage.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+			storage.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 				got = events
 				return nil
 			}
@@ -265,15 +265,15 @@ func TestStore(t *testing.T) {
 		t.Run("upgrade events when projecting", func(t *testing.T) {
 			// arrange
 			var (
-				entityType = newEntityType()
-				entityID   = newEntityID()
+				streamType = newStreamType()
+				streamID   = newStreamID()
 				storage    = &StorageMock{}
-				events     = newEvents(3, entityID, entityType, func(e *es.Event) {
+				events     = newEvents(3, streamID, streamType, func(e *es.Event) {
 					e.Content = EventMock{ID: rand.IntN(300)}
 				})
 				factorA, factorB = 2, 3
 				store            = es.NewStore(storage,
-					es.WithEventUpgrades(entityType,
+					es.WithEventUpgrades(streamType,
 						newEventUpgrade(factorA),
 						newEventUpgrade(factorB),
 					),
@@ -281,12 +281,12 @@ func TestStore(t *testing.T) {
 				got []es.Event
 			)
 
-			storage.ReadFunc = func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+			storage.ReadFunc = func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 				return seqs.Seq2(events...)
 			}
 
 			// act
-			err := store.Project(ctx, entityType, entityID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+			err := store.Project(ctx, streamType, streamID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 				got = append(got, event)
 				return nil
 			}))
@@ -307,17 +307,17 @@ func TestStore(t *testing.T) {
 		t.Run("upgrade events when event bus publishes", func(t *testing.T) {
 			// arrange
 			var (
-				entityType   = newEntityType()
-				entityID     = newEntityID()
+				streamType   = newStreamType()
+				streamID     = newStreamID()
 				subscriberID = newSubscriberID()
 				storage      = &StorageMock{}
 				eventBus     es.Writer
-				events       = newEvents(3, entityID, entityType, func(e *es.Event) {
+				events       = newEvents(3, streamID, streamType, func(e *es.Event) {
 					e.Content = EventMock{ID: rand.IntN(300)}
 				})
 				factorA, factorB = 2, 3
 				store            = es.NewStore(storage,
-					es.WithEventUpgrades(entityType,
+					es.WithEventUpgrades(streamType,
 						newEventUpgrade(factorA),
 						newEventUpgrade(factorB),
 					),
@@ -329,16 +329,16 @@ func TestStore(t *testing.T) {
 				eventBus = w
 				return nil
 			}
-			storage.WriteFunc = func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
-				return eventBus.Write(ctx, entityType, events)
+			storage.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
+				return eventBus.Write(ctx, streamType, events)
 			}
 			assert.NoError(t, store.Start(t.Context()))
 
-			assert.NoError(t, store.Subscribe(ctx, entityType, subscriberID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
+			assert.NoError(t, store.Subscribe(ctx, streamType, subscriberID, es.HandlerFunc(func(ctx context.Context, event es.Event) error {
 				got = append(got, event)
 				return nil
 			})))
-			stream := store.Open(ctx, entityType, entityID)
+			stream := store.Open(ctx, streamType, streamID)
 
 			// act
 			for _, event := range events {

@@ -20,10 +20,10 @@ var _ es.ReadWriter = &ReadWriterMock{}
 //
 //		// make and configure a mocked es.ReadWriter
 //		mockedReadWriter := &ReadWriterMock{
-//			ReadFunc: func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+//			ReadFunc: func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 //				panic("mock out the Read method")
 //			},
-//			WriteFunc: func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+//			WriteFunc: func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 //				panic("mock out the Write method")
 //			},
 //		}
@@ -34,10 +34,10 @@ var _ es.ReadWriter = &ReadWriterMock{}
 //	}
 type ReadWriterMock struct {
 	// ReadFunc mocks the Read method.
-	ReadFunc func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error]
+	ReadFunc func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error]
 
 	// WriteFunc mocks the Write method.
-	WriteFunc func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error
+	WriteFunc func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error
 
 	// calls tracks calls to the methods.
 	calls struct {
@@ -45,10 +45,10 @@ type ReadWriterMock struct {
 		Read []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// EntityType is the entityType argument value.
-			EntityType string
-			// EntityID is the entityID argument value.
-			EntityID string
+			// StreamType is the streamType argument value.
+			StreamType string
+			// StreamID is the streamID argument value.
+			StreamID string
 			// EventNumber is the eventNumber argument value.
 			EventNumber int64
 		}
@@ -56,8 +56,8 @@ type ReadWriterMock struct {
 		Write []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// EntityType is the entityType argument value.
-			EntityType string
+			// StreamType is the streamType argument value.
+			StreamType string
 			// Events is the events argument value.
 			Events iter.Seq2[es.Event, error]
 		}
@@ -67,25 +67,25 @@ type ReadWriterMock struct {
 }
 
 // Read calls ReadFunc.
-func (mock *ReadWriterMock) Read(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+func (mock *ReadWriterMock) Read(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 	if mock.ReadFunc == nil {
 		panic("ReadWriterMock.ReadFunc: method is nil but ReadWriter.Read was just called")
 	}
 	callInfo := struct {
 		Ctx         context.Context
-		EntityType  string
-		EntityID    string
+		StreamType  string
+		StreamID    string
 		EventNumber int64
 	}{
 		Ctx:         ctx,
-		EntityType:  entityType,
-		EntityID:    entityID,
+		StreamType:  streamType,
+		StreamID:    streamID,
 		EventNumber: eventNumber,
 	}
 	mock.lockRead.Lock()
 	mock.calls.Read = append(mock.calls.Read, callInfo)
 	mock.lockRead.Unlock()
-	return mock.ReadFunc(ctx, entityType, entityID, eventNumber)
+	return mock.ReadFunc(ctx, streamType, streamID, eventNumber)
 }
 
 // ReadCalls gets all the calls that were made to Read.
@@ -94,14 +94,14 @@ func (mock *ReadWriterMock) Read(ctx context.Context, entityType string, entityI
 //	len(mockedReadWriter.ReadCalls())
 func (mock *ReadWriterMock) ReadCalls() []struct {
 	Ctx         context.Context
-	EntityType  string
-	EntityID    string
+	StreamType  string
+	StreamID    string
 	EventNumber int64
 } {
 	var calls []struct {
 		Ctx         context.Context
-		EntityType  string
-		EntityID    string
+		StreamType  string
+		StreamID    string
 		EventNumber int64
 	}
 	mock.lockRead.RLock()
@@ -111,23 +111,23 @@ func (mock *ReadWriterMock) ReadCalls() []struct {
 }
 
 // Write calls WriteFunc.
-func (mock *ReadWriterMock) Write(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+func (mock *ReadWriterMock) Write(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 	if mock.WriteFunc == nil {
 		panic("ReadWriterMock.WriteFunc: method is nil but ReadWriter.Write was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
-		EntityType string
+		StreamType string
 		Events     iter.Seq2[es.Event, error]
 	}{
 		Ctx:        ctx,
-		EntityType: entityType,
+		StreamType: streamType,
 		Events:     events,
 	}
 	mock.lockWrite.Lock()
 	mock.calls.Write = append(mock.calls.Write, callInfo)
 	mock.lockWrite.Unlock()
-	return mock.WriteFunc(ctx, entityType, events)
+	return mock.WriteFunc(ctx, streamType, events)
 }
 
 // WriteCalls gets all the calls that were made to Write.
@@ -136,12 +136,12 @@ func (mock *ReadWriterMock) Write(ctx context.Context, entityType string, events
 //	len(mockedReadWriter.WriteCalls())
 func (mock *ReadWriterMock) WriteCalls() []struct {
 	Ctx        context.Context
-	EntityType string
+	StreamType string
 	Events     iter.Seq2[es.Event, error]
 } {
 	var calls []struct {
 		Ctx        context.Context
-		EntityType string
+		StreamType string
 		Events     iter.Seq2[es.Event, error]
 	}
 	mock.lockWrite.RLock()
@@ -160,19 +160,19 @@ var _ es.Storage = &StorageMock{}
 //
 //		// make and configure a mocked es.Storage
 //		mockedStorage := &StorageMock{
-//			GetEntityIDsFunc: func(ctx context.Context, entityType string, storeEntityID string, limit int64) ([]string, string, error) {
-//				panic("mock out the GetEntityIDs method")
+//			GetStreamIDsFunc: func(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error) {
+//				panic("mock out the GetStreamIDs method")
 //			},
-//			ReadFunc: func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+//			ReadFunc: func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 //				panic("mock out the Read method")
 //			},
-//			RegisterFunc: func(entityType string, types ...es.Content) error {
+//			RegisterFunc: func(streamType string, types ...es.Content) error {
 //				panic("mock out the Register method")
 //			},
 //			StartPublishFunc: func(ctx context.Context, w es.Writer) error {
 //				panic("mock out the StartPublish method")
 //			},
-//			WriteFunc: func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+//			WriteFunc: func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 //				panic("mock out the Write method")
 //			},
 //		}
@@ -182,31 +182,31 @@ var _ es.Storage = &StorageMock{}
 //
 //	}
 type StorageMock struct {
-	// GetEntityIDsFunc mocks the GetEntityIDs method.
-	GetEntityIDsFunc func(ctx context.Context, entityType string, storeEntityID string, limit int64) ([]string, string, error)
+	// GetStreamIDsFunc mocks the GetStreamIDs method.
+	GetStreamIDsFunc func(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error)
 
 	// ReadFunc mocks the Read method.
-	ReadFunc func(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error]
+	ReadFunc func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error]
 
 	// RegisterFunc mocks the Register method.
-	RegisterFunc func(entityType string, types ...es.Content) error
+	RegisterFunc func(streamType string, types ...es.Content) error
 
 	// StartPublishFunc mocks the StartPublish method.
 	StartPublishFunc func(ctx context.Context, w es.Writer) error
 
 	// WriteFunc mocks the Write method.
-	WriteFunc func(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error
+	WriteFunc func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// GetEntityIDs holds details about calls to the GetEntityIDs method.
-		GetEntityIDs []struct {
+		// GetStreamIDs holds details about calls to the GetStreamIDs method.
+		GetStreamIDs []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// EntityType is the entityType argument value.
-			EntityType string
-			// StoreEntityID is the storeEntityID argument value.
-			StoreEntityID string
+			// StreamType is the streamType argument value.
+			StreamType string
+			// StoreStreamID is the storeStreamID argument value.
+			StoreStreamID string
 			// Limit is the limit argument value.
 			Limit int64
 		}
@@ -214,17 +214,17 @@ type StorageMock struct {
 		Read []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// EntityType is the entityType argument value.
-			EntityType string
-			// EntityID is the entityID argument value.
-			EntityID string
+			// StreamType is the streamType argument value.
+			StreamType string
+			// StreamID is the streamID argument value.
+			StreamID string
 			// EventNumber is the eventNumber argument value.
 			EventNumber int64
 		}
 		// Register holds details about calls to the Register method.
 		Register []struct {
-			// EntityType is the entityType argument value.
-			EntityType string
+			// StreamType is the streamType argument value.
+			StreamType string
 			// Types is the types argument value.
 			Types []es.Content
 		}
@@ -239,83 +239,83 @@ type StorageMock struct {
 		Write []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// EntityType is the entityType argument value.
-			EntityType string
+			// StreamType is the streamType argument value.
+			StreamType string
 			// Events is the events argument value.
 			Events iter.Seq2[es.Event, error]
 		}
 	}
-	lockGetEntityIDs sync.RWMutex
+	lockGetStreamIDs sync.RWMutex
 	lockRead         sync.RWMutex
 	lockRegister     sync.RWMutex
 	lockStartPublish sync.RWMutex
 	lockWrite        sync.RWMutex
 }
 
-// GetEntityIDs calls GetEntityIDsFunc.
-func (mock *StorageMock) GetEntityIDs(ctx context.Context, entityType string, storeEntityID string, limit int64) ([]string, string, error) {
-	if mock.GetEntityIDsFunc == nil {
-		panic("StorageMock.GetEntityIDsFunc: method is nil but Storage.GetEntityIDs was just called")
+// GetStreamIDs calls GetStreamIDsFunc.
+func (mock *StorageMock) GetStreamIDs(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error) {
+	if mock.GetStreamIDsFunc == nil {
+		panic("StorageMock.GetStreamIDsFunc: method is nil but Storage.GetStreamIDs was just called")
 	}
 	callInfo := struct {
 		Ctx           context.Context
-		EntityType    string
-		StoreEntityID string
+		StreamType    string
+		StoreStreamID string
 		Limit         int64
 	}{
 		Ctx:           ctx,
-		EntityType:    entityType,
-		StoreEntityID: storeEntityID,
+		StreamType:    streamType,
+		StoreStreamID: storeStreamID,
 		Limit:         limit,
 	}
-	mock.lockGetEntityIDs.Lock()
-	mock.calls.GetEntityIDs = append(mock.calls.GetEntityIDs, callInfo)
-	mock.lockGetEntityIDs.Unlock()
-	return mock.GetEntityIDsFunc(ctx, entityType, storeEntityID, limit)
+	mock.lockGetStreamIDs.Lock()
+	mock.calls.GetStreamIDs = append(mock.calls.GetStreamIDs, callInfo)
+	mock.lockGetStreamIDs.Unlock()
+	return mock.GetStreamIDsFunc(ctx, streamType, storeStreamID, limit)
 }
 
-// GetEntityIDsCalls gets all the calls that were made to GetEntityIDs.
+// GetStreamIDsCalls gets all the calls that were made to GetStreamIDs.
 // Check the length with:
 //
-//	len(mockedStorage.GetEntityIDsCalls())
-func (mock *StorageMock) GetEntityIDsCalls() []struct {
+//	len(mockedStorage.GetStreamIDsCalls())
+func (mock *StorageMock) GetStreamIDsCalls() []struct {
 	Ctx           context.Context
-	EntityType    string
-	StoreEntityID string
+	StreamType    string
+	StoreStreamID string
 	Limit         int64
 } {
 	var calls []struct {
 		Ctx           context.Context
-		EntityType    string
-		StoreEntityID string
+		StreamType    string
+		StoreStreamID string
 		Limit         int64
 	}
-	mock.lockGetEntityIDs.RLock()
-	calls = mock.calls.GetEntityIDs
-	mock.lockGetEntityIDs.RUnlock()
+	mock.lockGetStreamIDs.RLock()
+	calls = mock.calls.GetStreamIDs
+	mock.lockGetStreamIDs.RUnlock()
 	return calls
 }
 
 // Read calls ReadFunc.
-func (mock *StorageMock) Read(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[es.Event, error] {
+func (mock *StorageMock) Read(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 	if mock.ReadFunc == nil {
 		panic("StorageMock.ReadFunc: method is nil but Storage.Read was just called")
 	}
 	callInfo := struct {
 		Ctx         context.Context
-		EntityType  string
-		EntityID    string
+		StreamType  string
+		StreamID    string
 		EventNumber int64
 	}{
 		Ctx:         ctx,
-		EntityType:  entityType,
-		EntityID:    entityID,
+		StreamType:  streamType,
+		StreamID:    streamID,
 		EventNumber: eventNumber,
 	}
 	mock.lockRead.Lock()
 	mock.calls.Read = append(mock.calls.Read, callInfo)
 	mock.lockRead.Unlock()
-	return mock.ReadFunc(ctx, entityType, entityID, eventNumber)
+	return mock.ReadFunc(ctx, streamType, streamID, eventNumber)
 }
 
 // ReadCalls gets all the calls that were made to Read.
@@ -324,14 +324,14 @@ func (mock *StorageMock) Read(ctx context.Context, entityType string, entityID s
 //	len(mockedStorage.ReadCalls())
 func (mock *StorageMock) ReadCalls() []struct {
 	Ctx         context.Context
-	EntityType  string
-	EntityID    string
+	StreamType  string
+	StreamID    string
 	EventNumber int64
 } {
 	var calls []struct {
 		Ctx         context.Context
-		EntityType  string
-		EntityID    string
+		StreamType  string
+		StreamID    string
 		EventNumber int64
 	}
 	mock.lockRead.RLock()
@@ -341,21 +341,21 @@ func (mock *StorageMock) ReadCalls() []struct {
 }
 
 // Register calls RegisterFunc.
-func (mock *StorageMock) Register(entityType string, types ...es.Content) error {
+func (mock *StorageMock) Register(streamType string, types ...es.Content) error {
 	if mock.RegisterFunc == nil {
 		panic("StorageMock.RegisterFunc: method is nil but Storage.Register was just called")
 	}
 	callInfo := struct {
-		EntityType string
+		StreamType string
 		Types      []es.Content
 	}{
-		EntityType: entityType,
+		StreamType: streamType,
 		Types:      types,
 	}
 	mock.lockRegister.Lock()
 	mock.calls.Register = append(mock.calls.Register, callInfo)
 	mock.lockRegister.Unlock()
-	return mock.RegisterFunc(entityType, types...)
+	return mock.RegisterFunc(streamType, types...)
 }
 
 // RegisterCalls gets all the calls that were made to Register.
@@ -363,11 +363,11 @@ func (mock *StorageMock) Register(entityType string, types ...es.Content) error 
 //
 //	len(mockedStorage.RegisterCalls())
 func (mock *StorageMock) RegisterCalls() []struct {
-	EntityType string
+	StreamType string
 	Types      []es.Content
 } {
 	var calls []struct {
-		EntityType string
+		StreamType string
 		Types      []es.Content
 	}
 	mock.lockRegister.RLock()
@@ -413,23 +413,23 @@ func (mock *StorageMock) StartPublishCalls() []struct {
 }
 
 // Write calls WriteFunc.
-func (mock *StorageMock) Write(ctx context.Context, entityType string, events iter.Seq2[es.Event, error]) error {
+func (mock *StorageMock) Write(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 	if mock.WriteFunc == nil {
 		panic("StorageMock.WriteFunc: method is nil but Storage.Write was just called")
 	}
 	callInfo := struct {
 		Ctx        context.Context
-		EntityType string
+		StreamType string
 		Events     iter.Seq2[es.Event, error]
 	}{
 		Ctx:        ctx,
-		EntityType: entityType,
+		StreamType: streamType,
 		Events:     events,
 	}
 	mock.lockWrite.Lock()
 	mock.calls.Write = append(mock.calls.Write, callInfo)
 	mock.lockWrite.Unlock()
-	return mock.WriteFunc(ctx, entityType, events)
+	return mock.WriteFunc(ctx, streamType, events)
 }
 
 // WriteCalls gets all the calls that were made to Write.
@@ -438,12 +438,12 @@ func (mock *StorageMock) Write(ctx context.Context, entityType string, events it
 //	len(mockedStorage.WriteCalls())
 func (mock *StorageMock) WriteCalls() []struct {
 	Ctx        context.Context
-	EntityType string
+	StreamType string
 	Events     iter.Seq2[es.Event, error]
 } {
 	var calls []struct {
 		Ctx        context.Context
-		EntityType string
+		StreamType string
 		Events     iter.Seq2[es.Event, error]
 	}
 	mock.lockWrite.RLock()

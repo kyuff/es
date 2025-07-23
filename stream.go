@@ -10,7 +10,7 @@ import (
 	"github.com/kyuff/es/internal/uuid"
 )
 
-// Stream is a sequence of Events that in combination represent the state of an entity.
+// Stream is a sequence of Events that in combination represent the state of a business entity.
 // The Stream can be written and read from, which enables applications to alter and get the state.
 type Stream interface {
 	// Project iterates over all events in the stream and calls the handler for each event.
@@ -30,12 +30,12 @@ type Stream interface {
 	Close() error
 }
 
-func newStream(ctx context.Context, entityType, entityID string, eventNumber int64, rd Reader, w Writer, cfg *Config) Stream {
+func newStream(ctx context.Context, streamType, streamID string, eventNumber int64, rd Reader, w Writer, cfg *Config) Stream {
 	return &stream{
 		ctx:        ctx,
 		cfg:        cfg,
-		entityType: entityType,
-		entityID:   entityID,
+		streamType: streamType,
+		streamID:   streamID,
 		rd:         rd,
 		w:          w,
 		position:   eventNumber,
@@ -45,15 +45,15 @@ func newStream(ctx context.Context, entityType, entityID string, eventNumber int
 type stream struct {
 	ctx        context.Context
 	cfg        *Config
-	entityType string
-	entityID   string
+	streamType string
+	streamID   string
 
 	rd            Reader
 	w             Writer
 	once          sync.Once
 	iter          iter.Seq2[Event, error]
 	position      int64
-	storeEntityID string
+	storeStreamID string
 }
 
 func (s *stream) Project(handler Handler) error {
@@ -78,22 +78,22 @@ func (s *stream) Write(eventContents ...Content) error {
 	)
 
 	if s.position == 0 {
-		s.storeEntityID = uuid.V7AtTime(eventTime)
-	} else if s.storeEntityID == "" {
+		s.storeStreamID = uuid.V7AtTime(eventTime)
+	} else if s.storeStreamID == "" {
 		return fmt.Errorf("must project stream before writing events after event number %d", s.position)
 	}
 
-	err := s.w.Write(s.ctx, s.entityType, func(yield func(Event, error) bool) {
+	err := s.w.Write(s.ctx, s.streamType, func(yield func(Event, error) bool) {
 		for i, content := range eventContents {
 			eventNumber = eventNumber + 1
 			event := Event{
-				EntityID:      s.entityID,
-				EntityType:    s.entityType,
+				StreamID:      s.streamID,
+				StreamType:    s.streamType,
 				EventNumber:   eventNumber,
 				EventTime:     eventTime,
 				Content:       content,
 				StoreEventID:  eventIDs[i],
-				StoreEntityID: s.storeEntityID,
+				StoreStreamID: s.storeStreamID,
 			}
 			if !yield(event, nil) {
 				return
@@ -111,7 +111,7 @@ func (s *stream) Write(eventContents ...Content) error {
 
 func (s *stream) All() iter.Seq2[Event, error] {
 	s.once.Do(func() {
-		i := s.rd.Read(s.ctx, s.entityType, s.entityID, s.position)
+		i := s.rd.Read(s.ctx, s.streamType, s.streamID, s.position)
 		s.iter = func(yield func(Event, error) bool) {
 			for event, err := range i {
 				if err != nil {
@@ -120,7 +120,7 @@ func (s *stream) All() iter.Seq2[Event, error] {
 				}
 
 				s.position = event.EventNumber
-				s.storeEntityID = event.StoreEntityID
+				s.storeStreamID = event.StoreStreamID
 				if !yield(event, nil) {
 					return
 				}

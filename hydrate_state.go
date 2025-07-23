@@ -16,22 +16,22 @@ func HydrateState[T Handler](t *testing.T, state T, contents ...Content) T {
 	}
 
 	var (
-		entityType    = uuid.V7()
-		entityID      = uuid.V7()
+		streamType    = uuid.V7()
+		streamID      = uuid.V7()
 		eventTime     = time.Now()
-		storeEntityID = uuid.V7AtTime(eventTime)
+		storeStreamID = uuid.V7AtTime(eventTime)
 		storeEventIDs = uuid.V7At(eventTime, len(contents))
 	)
 
 	for i, content := range contents {
 		err := state.Handle(t.Context(), Event{
-			EntityID:      entityID,
-			EntityType:    entityType,
+			StreamID:      streamID,
+			StreamType:    streamType,
 			EventNumber:   int64(i + 1),
 			EventTime:     time.Now(),
 			Content:       content,
 			StoreEventID:  storeEventIDs[i],
-			StoreEntityID: storeEntityID,
+			StoreStreamID: storeStreamID,
 		})
 		assert.NoError(t, err)
 	}

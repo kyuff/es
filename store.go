@@ -23,28 +23,28 @@ type Store struct {
 	upgradeReaders map[string]Reader
 }
 
-// Open a stream by the type and id of the entity. The Stream will be opened at the start and must be closed.
-func (s *Store) Open(ctx context.Context, entityType string, entityID string) Stream {
-	return s.OpenFrom(ctx, entityType, entityID, 0)
+// Open a stream by its type and id. The Stream will be opened at the start and must be closed.
+func (s *Store) Open(ctx context.Context, streamType string, streamID string) Stream {
+	return s.OpenFrom(ctx, streamType, streamID, 0)
 }
 
 // OpenFrom opens a Stream so the first event read will be eventNumber + 1.
 // The Stream must be closed.
-func (s *Store) OpenFrom(ctx context.Context, entityType string, entityID string, eventNumber int64) Stream {
+func (s *Store) OpenFrom(ctx context.Context, streamType string, streamID string, eventNumber int64) Stream {
 	return newStream(
 		ctx,
-		entityType,
-		entityID,
+		streamType,
+		streamID,
 		eventNumber,
-		s.getStreamReader(entityType),
+		s.getStreamReader(streamType),
 		s.storage,
 		s.cfg,
 	)
 }
 
-// Project onto a Handler all Events by the type and id of the entity.
-func (s *Store) Project(ctx context.Context, entityType, entityID string, handler Handler) (err error) {
-	stream := s.Open(ctx, entityType, entityID)
+// Project onto a Handler all Events by the type and id of the stream.
+func (s *Store) Project(ctx context.Context, streamType, streamID string, handler Handler) (err error) {
+	stream := s.Open(ctx, streamType, streamID)
 	defer func() {
 		err = errors.Join(err, stream.Close())
 	}()
@@ -57,22 +57,22 @@ func (s *Store) Project(ctx context.Context, entityType, entityID string, handle
 	return err
 }
 
-// Subscribe to all events on an entityType to be passed to the Handler
-func (s *Store) Subscribe(ctx context.Context, entityType string, subscriberID string, handler Handler) error {
-	return s.cfg.eventBus.Subscribe(ctx, entityType, subscriberID, handler)
+// Subscribe to all events on an streamType to be passed to the Handler
+func (s *Store) Subscribe(ctx context.Context, streamType string, subscriberID string, handler Handler) error {
+	return s.cfg.eventBus.Subscribe(ctx, streamType, subscriberID, handler)
 }
 
-// GetSubscriberIDs returns a list of all subscriber IDs registered for a given entityType.
-func (s *Store) GetSubscriberIDs(ctx context.Context, entityType string) ([]string, error) {
-	return s.cfg.eventBus.GetSubscriberIDs(ctx, entityType)
+// GetSubscriberIDs returns a list of all subscriber IDs registered for a given streamType.
+func (s *Store) GetSubscriberIDs(ctx context.Context, streamType string) ([]string, error) {
+	return s.cfg.eventBus.GetSubscriberIDs(ctx, streamType)
 }
 
 // Start starts the store by starting the storage and the event bus
 // The method is blocking and will return when the store is closed.
 // The method will return an error if the storage fails to publish events.
 func (s *Store) Start(ctx context.Context) error {
-	for entityType, contentTypes := range s.cfg.contentTypes {
-		err := s.storage.Register(entityType, contentTypes...)
+	for streamType, contentTypes := range s.cfg.contentTypes {
+		err := s.storage.Register(streamType, contentTypes...)
 		if err != nil {
 			return err
 		}
@@ -85,14 +85,14 @@ func (s *Store) Close() error {
 	return s.cfg.eventBus.Close()
 }
 
-func (s *Store) getStreamReader(entityType string) Reader {
+func (s *Store) getStreamReader(streamType string) Reader {
 	s.mux.RLock()
-	rd, ok := s.upgradeReaders[entityType]
+	rd, ok := s.upgradeReaders[streamType]
 	s.mux.RUnlock()
 	if !ok {
 		s.mux.Lock()
-		rd = newUpgradeReader(s.storage, s.cfg.eventUpgrades[entityType])
-		s.upgradeReaders[entityType] = rd
+		rd = newUpgradeReader(s.storage, s.cfg.eventUpgrades[streamType])
+		s.upgradeReaders[streamType] = rd
 		s.mux.Unlock()
 	}
 

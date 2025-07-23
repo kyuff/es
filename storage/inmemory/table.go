@@ -8,17 +8,17 @@ import (
 )
 
 type indexKey struct {
-	EntityType  string
-	EntityID    string
+	StreamType  string
+	StreamID    string
 	EventNumber int64
 }
 
 type tableRow struct {
-	EntityID      string
-	EntityType    string
+	StreamID      string
+	StreamType    string
 	EventNumber   int64
 	StoreEventID  string
-	StoreEntityID string
+	StoreStreamID string
 	EventTime     string
 	Content       []byte
 	ContentName   string
@@ -33,11 +33,11 @@ func newData(event es.Event, c *codecs.JSON) (tableRow, error) {
 	}
 
 	return tableRow{
-		EntityID:      event.EntityID,
-		EntityType:    event.EntityType,
+		StreamID:      event.StreamID,
+		StreamType:    event.StreamType,
 		EventNumber:   event.EventNumber,
 		StoreEventID:  event.StoreEventID,
-		StoreEntityID: event.StoreEntityID,
+		StoreStreamID: event.StoreStreamID,
 		EventTime:     event.EventTime.Format(time.RFC3339),
 		Content:       eventData,
 		ContentName:   event.Content.EventName(),
@@ -50,18 +50,18 @@ func (row tableRow) Event(c *codecs.JSON) (es.Event, error) {
 		return es.Event{}, err
 	}
 
-	eventData, err := c.Decode(row.EntityType, row.ContentName, row.Content)
+	eventData, err := c.Decode(row.StreamType, row.ContentName, row.Content)
 	if err != nil {
 		return es.Event{}, err
 	}
 
 	return es.Event{
-		EntityID:      row.EntityID,
-		EntityType:    row.EntityType,
+		StreamID:      row.StreamID,
+		StreamType:    row.StreamType,
 		EventNumber:   row.EventNumber,
 		EventTime:     eventTime,
 		Content:       eventData,
 		StoreEventID:  row.StoreEventID,
-		StoreEntityID: row.StoreEntityID,
+		StoreStreamID: row.StoreStreamID,
 	}, nil
 }

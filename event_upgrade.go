@@ -36,8 +36,8 @@ type upgradeReader struct {
 	rd       Reader
 }
 
-func (s *upgradeReader) Read(ctx context.Context, entityType string, entityID string, eventNumber int64) iter.Seq2[Event, error] {
-	i := s.rd.Read(ctx, entityType, entityID, eventNumber)
+func (s *upgradeReader) Read(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[Event, error] {
+	i := s.rd.Read(ctx, streamType, streamID, eventNumber)
 	for _, u := range s.upgrades {
 		i = u.Upgrade(ctx, i)
 	}
@@ -63,8 +63,8 @@ type upgradeWriter struct {
 
 func newUpgradeWriter(w Writer, upgradeMap map[string][]EventUpgrade) *upgradeWriter {
 	var upgrades = make(map[string]Writer)
-	for entityType, upgradeList := range upgradeMap {
-		upgrades[entityType] = combineEventUpgradesToWriter(w, upgradeList)
+	for streamType, upgradeList := range upgradeMap {
+		upgrades[streamType] = combineEventUpgradesToWriter(w, upgradeList)
 	}
 
 	return &upgradeWriter{
@@ -73,24 +73,24 @@ func newUpgradeWriter(w Writer, upgradeMap map[string][]EventUpgrade) *upgradeWr
 	}
 }
 
-func (u *upgradeWriter) Write(ctx context.Context, entityType string, events iter.Seq2[Event, error]) error {
+func (u *upgradeWriter) Write(ctx context.Context, streamType string, events iter.Seq2[Event, error]) error {
 	u.mux.RLock()
 	defer u.mux.RUnlock()
 
-	upgrades, ok := u.upgrades[entityType]
+	upgrades, ok := u.upgrades[streamType]
 	if !ok {
-		return u.w.Write(ctx, entityType, events)
+		return u.w.Write(ctx, streamType, events)
 	}
 
-	return upgrades.Write(ctx, entityType, events)
+	return upgrades.Write(ctx, streamType, events)
 }
 
 func combineEventUpgradesToWriter(w Writer, upgrades []EventUpgrade) writerFunc {
-	return func(ctx context.Context, entityType string, events iter.Seq2[Event, error]) error {
+	return func(ctx context.Context, streamType string, events iter.Seq2[Event, error]) error {
 		for _, u := range upgrades {
 			events = u.Upgrade(ctx, events)
 		}
 
-		return w.Write(ctx, entityType, events)
+		return w.Write(ctx, streamType, events)
 	}
 }
