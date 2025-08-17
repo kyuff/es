@@ -29,3 +29,11 @@ type Event struct {
 	// of the first event in the stream.
 	StoreStreamID string
 }
+
+// StreamReference is used as a reference to a stream.
+// It is primarily used a convenience for the Storage interface.
+type StreamReference struct {
+	StreamType    string
+	StreamID      string
+	StoreStreamID string
+}

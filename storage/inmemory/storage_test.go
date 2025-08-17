@@ -238,7 +238,16 @@ func TestStorage(t *testing.T) {
 			events     = newEvents(streamType, 5)
 			writer     = &WriterMock{}
 			sut        = inmemory.New()
+			expected   []es.StreamReference
 		)
+
+		for _, event := range events {
+			expected = append(expected, es.StreamReference{
+				StreamType:    event.StreamType,
+				StreamID:      event.StreamID,
+				StoreStreamID: event.StoreStreamID,
+			})
+		}
 
 		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
@@ -247,17 +256,12 @@ func TestStorage(t *testing.T) {
 		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(events...)))
 
 		// act
-		got, pageToken, err := sut.GetStreamIDs(t.Context(), streamType, "", 10)
+		got := sut.GetStreamReferences(t.Context(), streamType, "", 10)
 
 		// assert
-		assert.NoError(t, err)
-		var ids []string
-		for _, event := range events {
-			ids = append(ids, event.StreamID)
-		}
-		if assert.EqualSlice(t, ids, got) {
-			assert.Truef(t, events[len(events)-1].StoreStreamID == pageToken, "got page token %v", got)
-		}
+		assert.EqualSeq2(t, seqs.Seq2(expected...), got, func(expected, got assert.KeyValue[es.StreamReference, error]) bool {
+			return assert.Equal(t, expected.Key, got.Key)
+		})
 	})
 
 	t.Run("return stream ids written with limit", func(t *testing.T) {
@@ -267,7 +271,16 @@ func TestStorage(t *testing.T) {
 			events     = newEvents(streamType, 10)
 			writer     = &WriterMock{}
 			sut        = inmemory.New()
+			expected   []es.StreamReference
 		)
+
+		for _, event := range events[0:5] {
+			expected = append(expected, es.StreamReference{
+				StreamType:    event.StreamType,
+				StreamID:      event.StreamID,
+				StoreStreamID: event.StoreStreamID,
+			})
+		}
 
 		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
@@ -276,11 +289,12 @@ func TestStorage(t *testing.T) {
 		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(events...)))
 
 		// act
-		got, _, err := sut.GetStreamIDs(t.Context(), streamType, "", 5)
+		got := sut.GetStreamReferences(t.Context(), streamType, "", 5)
 
 		// assert
-		assert.NoError(t, err)
-		assert.Equal(t, 5, len(got))
+		assert.EqualSeq2(t, seqs.Seq2(expected...), got, func(expected, got assert.KeyValue[es.StreamReference, error]) bool {
+			return assert.Equal(t, expected.Key, got.Key)
+		})
 	})
 
 	t.Run("return stream ids from same stream type", func(t *testing.T) {
@@ -290,8 +304,17 @@ func TestStorage(t *testing.T) {
 			events     = newEvents(streamType, 10)
 			writer     = &WriterMock{}
 			sut        = inmemory.New()
+
+			expected []es.StreamReference
 		)
 
+		for _, event := range events[0:5] {
+			expected = append(expected, es.StreamReference{
+				StreamType:    event.StreamType,
+				StreamID:      event.StreamID,
+				StoreStreamID: event.StoreStreamID,
+			})
+		}
 		writer.WriteFunc = func(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
 			return nil
 		}
@@ -300,10 +323,11 @@ func TestStorage(t *testing.T) {
 		assert.NoError(t, sut.Write(ctx, streamType, seqs.Seq2(events...)))
 
 		// act
-		got, _, err := sut.GetStreamIDs(t.Context(), streamType, "", 5)
+		got := sut.GetStreamReferences(t.Context(), streamType, "", 5)
 
 		// assert
-		assert.NoError(t, err)
-		assert.Equal(t, 5, len(got))
+		assert.EqualSeq2(t, seqs.Seq2(expected...), got, func(expected, got assert.KeyValue[es.StreamReference, error]) bool {
+			return assert.Equal(t, expected.Key, got.Key)
+		})
 	})
 }
