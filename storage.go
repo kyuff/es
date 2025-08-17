@@ -19,8 +19,8 @@ type Storage interface {
 	// Register allows the Storage to Unmarshal multiple shapes of Content for an streamType.
 	// It is considered an error if a Storage contains a shape of Content that have not been registered.
 	Register(streamType string, types ...Content) error
-	// GetStreamIDs returns a list of streamIDs for the given streamType.
-	// The returned list is ordered by the storeStreamID and limited in size by the limit.
-	// The second return value is the next storeStreamID and works as a pagination token
-	GetStreamIDs(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error)
+	// GetStreamReferences returns a list of references to streams for the given streamType.
+	// The returned list is ordered by the StoreStreamID and limited in size by the limit.
+	// Use the last StreamReference.StoreStreamID as the pagination token.
+	GetStreamReferences(ctx context.Context, streamType string, storeStreamID string, limit int64) iter.Seq2[StreamReference, error]
 }

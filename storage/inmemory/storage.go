@@ -35,31 +35,38 @@ type Storage struct {
 	handlers    []es.Handler
 }
 
-func (s *Storage) GetStreamIDs(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error) {
-	s.tablesMux.RLock()
-	defer s.tablesMux.RUnlock()
+func (s *Storage) GetStreamReferences(ctx context.Context, streamType string, storeStreamID string, limit int64) iter.Seq2[es.StreamReference, error] {
+	return func(yield func(es.StreamReference, error) bool) {
+		s.tablesMux.RLock()
+		defer s.tablesMux.RUnlock()
 
-	var ids []string
-	var token = ""
-	for _, row := range s.table {
-		if streamType != row.StreamType {
-			continue
-		}
+		var sent int64 = 0
+		for _, row := range s.table {
+			if streamType != row.StreamType {
+				continue
+			}
 
-		if storeStreamID <= row.StoreStreamID {
-			ids = append(ids, row.StreamID)
-			token = row.StoreStreamID
-		}
+			if storeStreamID > row.StoreStreamID {
+				return
+			}
 
-		if len(ids) >= int(limit) {
-			break
+			if sent >= limit {
+				return
+			}
+
+			if !yield(es.StreamReference{
+				StreamType:    row.StreamType,
+				StreamID:      row.StreamID,
+				StoreStreamID: row.StoreStreamID,
+			}, nil) {
+				return
+			}
+			sent++
 		}
 	}
-
-	return ids, token, nil
 }
 
-func (s *Storage) Write(ctx context.Context, streamType string, events iter.Seq2[es.Event, error]) error {
+func (s *Storage) Write(ctx context.Context, _ string, events iter.Seq2[es.Event, error]) error {
 	for event, err := range events {
 		if err != nil {
 			return err

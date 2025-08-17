@@ -160,8 +160,8 @@ var _ es.Storage = &StorageMock{}
 //
 //		// make and configure a mocked es.Storage
 //		mockedStorage := &StorageMock{
-//			GetStreamIDsFunc: func(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error) {
-//				panic("mock out the GetStreamIDs method")
+//			GetStreamIDsFunc: func(ctx context.Context, streamType string, storeStreamID string, limit int64) iter.Seq2[es.StreamID, error] {
+//				panic("mock out the GetStreamReferences method")
 //			},
 //			ReadFunc: func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error] {
 //				panic("mock out the Read method")
@@ -182,8 +182,8 @@ var _ es.Storage = &StorageMock{}
 //
 //	}
 type StorageMock struct {
-	// GetStreamIDsFunc mocks the GetStreamIDs method.
-	GetStreamIDsFunc func(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error)
+	// GetStreamIDsFunc mocks the GetStreamReferences method.
+	GetStreamIDsFunc func(ctx context.Context, streamType string, storeStreamID string, limit int64) iter.Seq2[es.StreamReference, error]
 
 	// ReadFunc mocks the Read method.
 	ReadFunc func(ctx context.Context, streamType string, streamID string, eventNumber int64) iter.Seq2[es.Event, error]
@@ -199,7 +199,7 @@ type StorageMock struct {
 
 	// calls tracks calls to the methods.
 	calls struct {
-		// GetStreamIDs holds details about calls to the GetStreamIDs method.
+		// GetStreamReferences holds details about calls to the GetStreamReferences method.
 		GetStreamIDs []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
@@ -252,10 +252,10 @@ type StorageMock struct {
 	lockWrite        sync.RWMutex
 }
 
-// GetStreamIDs calls GetStreamIDsFunc.
-func (mock *StorageMock) GetStreamIDs(ctx context.Context, streamType string, storeStreamID string, limit int64) ([]string, string, error) {
+// GetStreamReferences calls GetStreamIDsFunc.
+func (mock *StorageMock) GetStreamReferences(ctx context.Context, streamType string, storeStreamID string, limit int64) iter.Seq2[es.StreamReference, error] {
 	if mock.GetStreamIDsFunc == nil {
-		panic("StorageMock.GetStreamIDsFunc: method is nil but Storage.GetStreamIDs was just called")
+		panic("StorageMock.GetStreamIDsFunc: method is nil but Storage.GetStreamReferences was just called")
 	}
 	callInfo := struct {
 		Ctx           context.Context
@@ -274,7 +274,7 @@ func (mock *StorageMock) GetStreamIDs(ctx context.Context, streamType string, st
 	return mock.GetStreamIDsFunc(ctx, streamType, storeStreamID, limit)
 }
 
-// GetStreamIDsCalls gets all the calls that were made to GetStreamIDs.
+// GetStreamIDsCalls gets all the calls that were made to GetStreamReferences.
 // Check the length with:
 //
 //	len(mockedStorage.GetStreamIDsCalls())

@@ -14,6 +14,7 @@ type KeyValue[K, V any] struct {
 }
 
 func EqualSeq2[K, V any](t *testing.T, expected, got iter.Seq2[K, V], equal func(expected, got KeyValue[K, V]) bool) bool {
+	t.Helper()
 	var x []KeyValue[K, V]
 	var y []KeyValue[K, V]
 	for key, val := range expected {
